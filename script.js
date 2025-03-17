@@ -111,27 +111,3 @@ async function logTrip() {
     // Update totals
     if (!dailyMiles[period]) {
       dailyMiles[period] = 0; // Initialize if undefined
-    }
-    dailyMiles[period] += parseFloat(distance);
-    monthlyTotal += parseFloat(distance);
-    updateTotals();
-
-    // Clear form inputs
-    document.getElementById('start').value = '';
-    document.getElementById('destination').value = '';
-    document.getElementById('output').textContent = "Trip added successfully!";
-  } catch (error) {
-    document.getElementById('output').textContent = error.message;
-  }
-}
-
-function updateTotals() {
-  // Update the daily totals
-  document.getElementById('daily-am').textContent = `AM Total: ${dailyMiles.AM.toFixed(2)} miles`;
-  document.getElementById('daily-pm').textContent = `PM Total: ${dailyMiles.PM.toFixed(2)} miles`;
-  document.getElementById('daily-total').textContent = `Daily Total: ${(dailyMiles.AM + dailyMiles.PM).toFixed(2)} miles`;
-
-  // Update the monthly total
-  document.getElementById('monthly-total').textContent = `Monthly Total: ${monthlyTotal.toFixed(2)} miles`;
-}
-

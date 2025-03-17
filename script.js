@@ -108,10 +108,11 @@ async function logTrip() {
     dailyMiles[period] += parseFloat(distance);
     monthlyTotal += parseFloat(distance);
     updateTotals();
+    saveTripLogsToStorage(); // Save updated logs to storage
 
     document.getElementById('start').value = '';
     document.getElementById('destination').value = '';
-    document.getElementById('output').textContent = "Trip added successfully!";
+    document.getElementById('output').textContent = "Trip added successfully! Note: Shortest route distance calculated.";
   } catch (error) {
     document.getElementById('output').textContent = error.message;
   }
@@ -128,6 +129,29 @@ function updateTotals() {
   localStorage.setItem('monthlyTotal', monthlyTotal);
 }
 
+function saveTripLogsToStorage() {
+  const tableBody = document.getElementById('trip-log');
+  const rows = Array.from(tableBody.rows);
+
+  const tripData = rows.map(row => {
+    const cells = Array.from(row.cells).map(cell => cell.textContent);
+    return cells;
+  });
+
+  localStorage.setItem('tripLogs', JSON.stringify(tripData));
+}
+
+function loadTripLogsFromStorage() {
+  const savedLogs = JSON.parse(localStorage.getItem('tripLogs') || '[]');
+
+  const tableBody = document.getElementById('trip-log');
+  savedLogs.forEach(log => {
+    const row = document.createElement('tr');
+    row.innerHTML = log.map(data => `<td>${data}</td>`).join('');
+    tableBody.appendChild(row);
+  });
+}
+
 function initializeTotals() {
   const savedDailyMiles = localStorage.getItem('dailyMiles');
   const savedMonthlyTotal = localStorage.getItem('monthlyTotal');
@@ -139,24 +163,22 @@ function initializeTotals() {
     monthlyTotal = parseFloat(savedMonthlyTotal);
   }
 
+  loadTripLogsFromStorage(); // Load table logs on initialization
   updateTotals();
 }
-
-// Call this function when the page loads
-initializeTotals();
 
 function exportLogsAsCSV() {
   const tableBody = document.getElementById('trip-log');
   const rows = Array.from(tableBody.rows);
-  let csvContent = "Date,Period,Start Postcode,Destination Postcode,Distance (miles)\n";
+
+  let csvContent = "Trip Logs:\nDate,Period,Start Postcode,Destination Postcode,Distance (miles)\n";
 
   rows.forEach(row => {
-    const cells = Array.from(row.cells).map(cell => cell.textContent);
+    const cells = Array.from(row.cells).map(cell => `"${cell.textContent}"`);
     csvContent += cells.join(",") + "\n";
   });
 
-  // Add the monthly total at the end of the file
-  csvContent += `\nMonthly Total,,${monthlyTotal.toFixed(2)} miles`;
+  csvContent += `\nSummary:\nMonthly Total,,,"${monthlyTotal.toFixed(2)} miles"\n`;
 
   const blob = new Blob([csvContent], { type: 'text/csv' });
   const url = URL.createObjectURL(blob);
@@ -171,3 +193,8 @@ function exportLogsAsCSV() {
 window.logTrip = logTrip;
 window.showSavedPostcodes = showSavedPostcodes;
 window.initializeTotals = initializeTotals;
+window.exportLogsAsCSV = exportLogsAsCSV;
+
+// Initialize data on page load
+initializeTotals();
+

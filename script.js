@@ -129,3 +129,24 @@ function updateTotals() {
 // Attach functions to the global scope
 window.logTrip = logTrip;
 window.showSavedPostcodes = showSavedPostcodes;
+
+function exportLogsAsCSV() {
+  const tableBody = document.getElementById('trip-log');
+  const rows = Array.from(tableBody.rows);
+  let csvContent = "Date,Period,Start Postcode,Destination Postcode,Distance (miles)\n";
+
+  rows.forEach(row => {
+    const cells = Array.from(row.cells).map(cell => cell.textContent);
+    csvContent += cells.join(",") + "\n";
+  });
+
+  const blob = new Blob([csvContent], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'trip_logs.csv';
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+

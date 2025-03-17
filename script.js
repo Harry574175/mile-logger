@@ -156,7 +156,7 @@ function clearAll() {
   document.getElementById('output').textContent = "All logged miles have been cleared!";
 }
 
-// Ensure functions are globally accessible
+// Attach functions to global scope
 window.logTrip = logTrip;
 window.showSavedPostcodes = showSavedPostcodes;
 window.clearAll = clearAll;

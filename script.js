@@ -4,7 +4,6 @@ let monthlyTotal = 0; // Track total miles for the month
 async function geocodePostcode(postcode) {
   const apiKey = '5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101';
 
-  // Standardize the postcode: remove spaces and convert to uppercase
   const standardizedPostcode = postcode.replace(/\s+/g, '').toUpperCase();
   const url = `https://api.openrouteservice.org/geocode/search?api_key=${apiKey}&text=${encodeURIComponent(standardizedPostcode)}`;
 
@@ -12,7 +11,6 @@ async function geocodePostcode(postcode) {
     const response = await fetch(url);
     const data = await response.json();
 
-    // Check if the API returned valid data
     if (data.features && data.features.length > 0) {
       return data.features[0].geometry.coordinates; // [longitude, latitude]
     } else {
@@ -26,7 +24,6 @@ async function geocodePostcode(postcode) {
 
 async function calculateDistance(startPostcode, destinationPostcode) {
   try {
-    // Geocode the start and destination postcodes
     const startCoords = await geocodePostcode(startPostcode);
     const destinationCoords = await geocodePostcode(destinationPostcode);
 
@@ -36,7 +33,6 @@ async function calculateDistance(startPostcode, destinationPostcode) {
     const response = await fetch(url);
     const data = await response.json();
 
-    // Check if the API returned valid distance data
     if (data.features && data.features.length > 0) {
       const distanceInKm = data.features[0].properties.segments[0].distance / 1000;
       const distanceInMiles = distanceInKm * 0.621371; // Convert km to miles
@@ -92,11 +88,9 @@ async function logTrip() {
   try {
     const distance = await calculateDistance(startPostcode, destinationPostcode);
 
-    // Add postcodes to the saved list
     savePostcode(startPostcode);
     savePostcode(destinationPostcode);
 
-    // Add trip details to the log
     const tableBody = document.getElementById('trip-log');
     const row = document.createElement('tr');
     row.innerHTML = `
@@ -108,6 +102,29 @@ async function logTrip() {
     `;
     tableBody.appendChild(row);
 
-    // Update totals
     if (!dailyMiles[period]) {
       dailyMiles[period] = 0; // Initialize if undefined
+    }
+    dailyMiles[period] += parseFloat(distance);
+    monthlyTotal += parseFloat(distance);
+    updateTotals();
+
+    document.getElementById('start').value = '';
+    document.getElementById('destination').value = '';
+    document.getElementById('output').textContent = "Trip added successfully!";
+  } catch (error) {
+    document.getElementById('output').textContent = error.message;
+  }
+}
+
+function updateTotals() {
+  document.getElementById('daily-am').textContent = `AM Total: ${dailyMiles.AM.toFixed(2)} miles`;
+  document.getElementById('daily-pm').textContent = `PM Total: ${dailyMiles.PM.toFixed(2)} miles`;
+  document.getElementById('daily-total').textContent = `Daily Total: ${(dailyMiles.AM + dailyMiles.PM).toFixed(2)} miles`;
+
+  document.getElementById('monthly-total').textContent = `Monthly Total: ${monthlyTotal.toFixed(2)} miles`;
+}
+
+// Expose functions to the global scope
+window.logTrip = logTrip;
+window.showSavedPostcodes = showSavedPostcodes;

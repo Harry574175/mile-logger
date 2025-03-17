@@ -1,4 +1,5 @@
-let dailyMiles = { AM: 0, PM: 0 }; // Track AM and PM miles for the day
+// Track AM and PM miles for the day
+let dailyMiles = { AM: 0, PM: 0 }; 
 let monthlyTotal = 0; // Track total miles for the month
 
 async function geocodePostcode(postcode) {
@@ -125,6 +126,6 @@ function updateTotals() {
   document.getElementById('monthly-total').textContent = `Monthly Total: ${monthlyTotal.toFixed(2)} miles`;
 }
 
-// Expose functions to the global scope
+// Attach functions to the global scope
 window.logTrip = logTrip;
 window.showSavedPostcodes = showSavedPostcodes;

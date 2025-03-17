@@ -4,7 +4,6 @@ let monthlyTotal = 0; // Track total miles for the month
 
 async function geocodePostcode(postcode) {
   const apiKey = '5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101';
-
   const standardizedPostcode = postcode.replace(/\s+/g, '').toUpperCase();
   const url = `https://api.openrouteservice.org/geocode/search?api_key=${apiKey}&text=${encodeURIComponent(standardizedPostcode)}`;
 
@@ -29,7 +28,7 @@ async function calculateDistance(startPostcode, destinationPostcode) {
     const destinationCoords = await geocodePostcode(destinationPostcode);
 
     const apiKey = '5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101';
-    const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${apiKey}&start=${startCoords[0]},${startCoords[1]}&end=${destinationCoords[0]},${destinationCoords[1]}`;
+    const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${apiKey}&start=${startCoords[0]},${startCoords[1]}&end=${destinationCoords[0]},${destinationCoords[1]}&priority=shortest`;
 
     const response = await fetch(url);
     const data = await response.json();
@@ -122,13 +121,29 @@ function updateTotals() {
   document.getElementById('daily-am').textContent = `AM Total: ${dailyMiles.AM.toFixed(2)} miles`;
   document.getElementById('daily-pm').textContent = `PM Total: ${dailyMiles.PM.toFixed(2)} miles`;
   document.getElementById('daily-total').textContent = `Daily Total: ${(dailyMiles.AM + dailyMiles.PM).toFixed(2)} miles`;
-
   document.getElementById('monthly-total').textContent = `Monthly Total: ${monthlyTotal.toFixed(2)} miles`;
+
+  // Save to localStorage
+  localStorage.setItem('dailyMiles', JSON.stringify(dailyMiles));
+  localStorage.setItem('monthlyTotal', monthlyTotal);
 }
 
-// Attach functions to the global scope
-window.logTrip = logTrip;
-window.showSavedPostcodes = showSavedPostcodes;
+function initializeTotals() {
+  const savedDailyMiles = localStorage.getItem('dailyMiles');
+  const savedMonthlyTotal = localStorage.getItem('monthlyTotal');
+
+  if (savedDailyMiles) {
+    dailyMiles = JSON.parse(savedDailyMiles);
+  }
+  if (savedMonthlyTotal) {
+    monthlyTotal = parseFloat(savedMonthlyTotal);
+  }
+
+  updateTotals();
+}
+
+// Call this function when the page loads
+initializeTotals();
 
 function exportLogsAsCSV() {
   const tableBody = document.getElementById('trip-log');
@@ -140,6 +155,9 @@ function exportLogsAsCSV() {
     csvContent += cells.join(",") + "\n";
   });
 
+  // Add the monthly total at the end of the file
+  csvContent += `\nMonthly Total,,${monthlyTotal.toFixed(2)} miles`;
+
   const blob = new Blob([csvContent], { type: 'text/csv' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -149,4 +167,7 @@ function exportLogsAsCSV() {
   URL.revokeObjectURL(url);
 }
 
-
+// Attach functions to the global scope
+window.logTrip = logTrip;
+window.showSavedPostcodes = showSavedPostcodes;
+window.initializeTotals = initializeTotals;

@@ -50,6 +50,34 @@ async function calculateDistance(startPostcode, destinationPostcode) {
   }
 }
 
+function savePostcode(postcode) {
+  let savedPostcodes = JSON.parse(localStorage.getItem('postcodes')) || [];
+  if (!savedPostcodes.includes(postcode)) {
+    savedPostcodes.push(postcode);
+    localStorage.setItem('postcodes', JSON.stringify(savedPostcodes));
+  }
+}
+
+function getPostcodes() {
+  return JSON.parse(localStorage.getItem('postcodes')) || [];
+}
+
+function showSavedPostcodes(fieldId) {
+  const list = document.getElementById(`${fieldId}-saved-list`);
+  list.innerHTML = ''; // Clear the list
+  const savedPostcodes = getPostcodes();
+
+  savedPostcodes.forEach(postcode => {
+    const listItem = document.createElement('li');
+    listItem.textContent = postcode;
+    listItem.addEventListener('click', function () {
+      document.getElementById(fieldId).value = postcode; // Populate the input field
+      list.innerHTML = ''; // Clear the list after selection
+    });
+    list.appendChild(listItem);
+  });
+}
+
 async function logTrip() {
   const date = document.getElementById('date').value;
   const startPostcode = document.getElementById('start').value;
@@ -64,7 +92,11 @@ async function logTrip() {
   try {
     const distance = await calculateDistance(startPostcode, destinationPostcode);
 
-    // Add the trip details to the log table
+    // Add postcodes to the saved list
+    savePostcode(startPostcode);
+    savePostcode(destinationPostcode);
+
+    // Add trip details to the log
     const tableBody = document.getElementById('trip-log');
     const row = document.createElement('tr');
     row.innerHTML = `
@@ -84,7 +116,7 @@ async function logTrip() {
     monthlyTotal += parseFloat(distance);
     updateTotals();
 
-    // Clear the form inputs
+    // Clear form inputs
     document.getElementById('start').value = '';
     document.getElementById('destination').value = '';
     document.getElementById('output').textContent = "Trip added successfully!";

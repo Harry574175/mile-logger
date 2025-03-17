@@ -112,7 +112,7 @@ async function logTrip() {
 
     document.getElementById('start').value = '';
     document.getElementById('destination').value = '';
-    document.getElementById('output').textContent = "Trip added successfully! Note: Shortest route distance calculated.";
+    document.getElementById('output').textContent = "Trip added successfully!";
   } catch (error) {
     document.getElementById('output').textContent = error.message;
   }
@@ -197,4 +197,3 @@ window.exportLogsAsCSV = exportLogsAsCSV;
 
 // Initialize data on page load
 initializeTotals();
-

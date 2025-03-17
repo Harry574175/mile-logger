@@ -11,8 +11,13 @@ async function geocodePostcode(postcode) {
   try {
     const response = await fetch(url);
     const data = await response.json();
-    // Get the coordinates (longitude and latitude) of the postcode
-    return data.features[0].geometry.coordinates; // [longitude, latitude]
+
+    // Check if the API returned valid data
+    if (data.features && data.features.length > 0) {
+      return data.features[0].geometry.coordinates; // [longitude, latitude]
+    } else {
+      throw new Error(`Could not find location for the postcode: ${postcode}`);
+    }
   } catch (error) {
     console.error("Error geocoding postcode:", error);
     throw new Error("Could not find location for the postcode.");
@@ -31,11 +36,14 @@ async function calculateDistance(startPostcode, destinationPostcode) {
     const response = await fetch(url);
     const data = await response.json();
 
-    // Get the distance in meters and convert to kilometers
-    const distanceInKm = data.features[0].properties.segments[0].distance / 1000;
-    // Convert kilometers to miles
-    const distanceInMiles = distanceInKm * 0.621371;
-    return distanceInMiles.toFixed(2); // Return the distance in miles
+    // Check if the API returned valid distance data
+    if (data.features && data.features.length > 0) {
+      const distanceInKm = data.features[0].properties.segments[0].distance / 1000;
+      const distanceInMiles = distanceInKm * 0.621371; // Convert km to miles
+      return distanceInMiles.toFixed(2); // Return distance in miles
+    } else {
+      throw new Error("Could not calculate distance.");
+    }
   } catch (error) {
     console.error("Error calculating distance:", error);
     throw new Error("Could not calculate distance.");
@@ -59,7 +67,6 @@ async function logTrip() {
     // Add the trip details to the log table
     const tableBody = document.getElementById('trip-log');
     const row = document.createElement('tr');
-
     row.innerHTML = `
       <td>${date}</td>
       <td>${period}</td>
@@ -70,6 +77,9 @@ async function logTrip() {
     tableBody.appendChild(row);
 
     // Update totals
+    if (!dailyMiles[period]) {
+      dailyMiles[period] = 0; // Initialize if undefined
+    }
     dailyMiles[period] += parseFloat(distance);
     monthlyTotal += parseFloat(distance);
     updateTotals();
@@ -79,7 +89,7 @@ async function logTrip() {
     document.getElementById('destination').value = '';
     document.getElementById('output').textContent = "Trip added successfully!";
   } catch (error) {
-    document.getElementById('output').textContent = "An error occurred. Please try again.";
+    document.getElementById('output').textContent = error.message;
   }
 }
 

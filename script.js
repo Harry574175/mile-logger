@@ -134,3 +134,4 @@ function updateTotals() {
   // Update the monthly total
   document.getElementById('monthly-total').textContent = `Monthly Total: ${monthlyTotal.toFixed(2)} miles`;
 }
+

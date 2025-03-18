@@ -1,1 +1,8 @@
-
+body {
+  background: url('./images/background.jpg') no-repeat center center fixed; /* Path to the image */
+  background-size: cover; /* Ensures the image fills the background */
+  filter: blur(8px); /* Adds the blur effect */
+  margin: 0;
+  padding: 0;
+  height: 100vh; /* Ensures the background covers the entire viewport */
+}

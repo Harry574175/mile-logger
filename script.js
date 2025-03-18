@@ -81,3 +81,140 @@ async function logTrip() {
   const period = document.getElementById('period').value; // AM or PM
 
   if (!date || !startPostcode || !destinationPostcode) {
+    document.getElementById('output').textContent = "Please fill in all fields.";
+    return;
+  }
+
+  try {
+    const distance = await calculateDistance(startPostcode, destinationPostcode);
+
+    savePostcode(startPostcode);
+    savePostcode(destinationPostcode);
+
+    const tableBody = document.getElementById('trip-log');
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>${date}</td>
+      <td>${period}</td>
+      <td>${startPostcode}</td>
+      <td>${destinationPostcode}</td>
+      <td>${distance} miles</td>
+    `;
+    tableBody.appendChild(row);
+
+    if (!dailyMiles[period]) {
+      dailyMiles[period] = 0; // Initialize if undefined
+    }
+    dailyMiles[period] += parseFloat(distance);
+    monthlyTotal += parseFloat(distance);
+    updateTotals();
+    saveTripLogsToStorage(); // Save updated logs to storage
+
+    document.getElementById('start').value = '';
+    document.getElementById('destination').value = '';
+    document.getElementById('output').textContent = "Trip added successfully!";
+  } catch (error) {
+    document.getElementById('output').textContent = error.message;
+  }
+}
+
+function updateTotals() {
+  document.getElementById('daily-am').textContent = `AM Total: ${dailyMiles.AM.toFixed(2)} miles`;
+  document.getElementById('daily-pm').textContent = `PM Total: ${dailyMiles.PM.toFixed(2)} miles`;
+  document.getElementById('daily-total').textContent = `Daily Total: ${(dailyMiles.AM + dailyMiles.PM).toFixed(2)} miles`;
+  document.getElementById('monthly-total').textContent = `Monthly Total: ${monthlyTotal.toFixed(2)} miles`;
+
+  // Save to localStorage
+  localStorage.setItem('dailyMiles', JSON.stringify(dailyMiles));
+  localStorage.setItem('monthlyTotal', monthlyTotal);
+}
+
+function saveTripLogsToStorage() {
+  const tableBody = document.getElementById('trip-log');
+  const rows = Array.from(tableBody.rows);
+
+  const tripData = rows.map(row => {
+    const cells = Array.from(row.cells).map(cell => cell.textContent);
+    return cells;
+  });
+
+  localStorage.setItem('tripLogs', JSON.stringify(tripData));
+}
+
+function loadTripLogsFromStorage() {
+  const savedLogs = JSON.parse(localStorage.getItem('tripLogs') || '[]');
+
+  const tableBody = document.getElementById('trip-log');
+  savedLogs.forEach(log => {
+    const row = document.createElement('tr');
+    row.innerHTML = log.map(data => `<td>${data}</td>`).join('');
+    tableBody.appendChild(row);
+  });
+}
+
+function initializeTotals() {
+  const savedDailyMiles = localStorage.getItem('dailyMiles');
+  const savedMonthlyTotal = localStorage.getItem('monthlyTotal');
+
+  if (savedDailyMiles) {
+    dailyMiles = JSON.parse(savedDailyMiles);
+  }
+  if (savedMonthlyTotal) {
+    monthlyTotal = parseFloat(savedMonthlyTotal);
+  }
+
+  loadTripLogsFromStorage(); // Load table logs on initialization
+  updateTotals();
+}
+
+function clearAll() {
+  // Clear trip log
+  const tableBody = document.getElementById('trip-log');
+  tableBody.innerHTML = '';
+
+  // Reset totals
+  dailyMiles = { AM: 0, PM: 0 };
+  monthlyTotal = 0;
+
+  // Save cleared state to localStorage
+  localStorage.setItem('dailyMiles', JSON.stringify(dailyMiles));
+  localStorage.setItem('monthlyTotal', monthlyTotal);
+
+  // Update totals in the DOM
+  updateTotals();
+
+  // Provide feedback to the user
+  document.getElementById('output').textContent = "All logged miles have been cleared!";
+}
+
+function exportLogsAsCSV() {
+  const tableBody = document.getElementById('trip-log');
+  const rows = Array.from(tableBody.rows);
+
+  let csvContent = "Trip Logs:\nDate,Period,Start Postcode,Destination Postcode,Distance (miles)\n";
+
+  rows.forEach(row => {
+    const cells = Array.from(row.cells).map(cell => `"${cell.textContent}"`);
+    csvContent += cells.join(",") + "\n";
+  });
+
+  csvContent += `\nSummary:\nMonthly Total,,,"${monthlyTotal.toFixed(2)} miles"\n`;
+
+  const blob = new Blob([csvContent], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'trip_logs.csv';
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+// Attach functions to the global scope
+window.logTrip = logTrip;
+window.showSavedPostcodes = showSavedPostcodes;
+window.clearAll = clearAll;
+window.initializeTotals = initializeTotals;
+window.exportLogsAsCSV = exportLogsAsCSV;
+
+// Initialize data on page load
+initializeTotals();

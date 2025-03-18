@@ -1,5 +1,5 @@
 // Track AM and PM miles for the day
-let dailyMiles = { AM: 0, PM: 0 };
+let dailyMiles = { AM: 0, PM: 0 }; 
 let monthlyTotal = 0; // Track total miles for the month
 
 async function geocodePostcode(postcode) {
@@ -178,7 +178,8 @@ function clearAll() {
 
   // Save cleared state to localStorage
   localStorage.setItem('dailyMiles', JSON.stringify(dailyMiles));
-  localStorage.setItem('monthlyTotal', monthlyTotal);
+  localStorage.setItem('monthlyTotal', JSON.stringify(monthlyTotal));
+  localStorage.setItem('tripLogs', JSON.stringify([])); // Clear trip log storage
 
   // Update totals in the DOM
   updateTotals();

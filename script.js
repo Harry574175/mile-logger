@@ -168,23 +168,18 @@ function initializeTotals() {
 }
 
 function clearAll() {
-  // Clear trip log
   const tableBody = document.getElementById('trip-log');
   tableBody.innerHTML = '';
 
-  // Reset totals
   dailyMiles = { AM: 0, PM: 0 };
   monthlyTotal = 0;
 
-  // Save cleared state to localStorage
   localStorage.setItem('dailyMiles', JSON.stringify(dailyMiles));
-  localStorage.setItem('monthlyTotal', JSON.stringify(monthlyTotal));
-  localStorage.setItem('tripLogs', JSON.stringify([])); // Clear trip log storage
+  localStorage.setItem('monthlyTotal', monthlyTotal);
+  localStorage.setItem('tripLogs', JSON.stringify([]));
 
-  // Update totals in the DOM
   updateTotals();
 
-  // Provide feedback to the user
   document.getElementById('output').textContent = "All logged miles have been cleared!";
 }
 
@@ -210,12 +205,10 @@ function exportLogsAsCSV() {
   URL.revokeObjectURL(url);
 }
 
-// Attach functions to the global scope
 window.logTrip = logTrip;
 window.showSavedPostcodes = showSavedPostcodes;
 window.clearAll = clearAll;
 window.initializeTotals = initializeTotals;
 window.exportLogsAsCSV = exportLogsAsCSV;
 
-// Initialize data on page load
 initializeTotals();

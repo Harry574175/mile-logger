@@ -4,6 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Distance Tracker</title>
+
+  <!-- Link to external CSS file -->
+  <link rel="stylesheet" href="style.css">
+
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -80,62 +84,62 @@
   </style>
 </head>
 <body>
-  <p id="personal-note">From Harry to Mum xxxx</p> <!-- Added personal note -->
-  <h1>Distance Tracker</h1>
-  <p style="color: gray; font-style: italic;">
-    *Note: This app calculates the shortest route distance for each journey.
-  </p>
-  <div class="form-group">
-    <label for="date">Date:</label>
-    <input type="date" id="date">
+  <!-- Overlay for subtle readability enhancement -->
+  <div class="overlay"></div>
+
+  <!-- Container for app content -->
+  <div class="container">
+    <p id="personal-note">From Harry to Mum xxxx</p> <!-- Added personal note -->
+    <h1>Distance Tracker</h1>
+    <p style="color: gray; font-style: italic;">
+      *Note: This app calculates the shortest route distance for each journey.
+    </p>
+    <div class="form-group">
+      <label for="date">Date:</label>
+      <input type="date" id="date">
+    </div>
+    <div class="form-group">
+      <label for="start">Start Postcode:</label>
+      <input type="text" id="start" placeholder="Enter start postcode (e.g., SW1A 1AA)">
+      <button onclick="showSavedPostcodes('start')">Recent</button>
+      <ul id="start-saved-list" class="saved-list"></ul>
+    </div>
+    <div class="form-group">
+      <label for="destination">Destination Postcode:</label>
+      <input type="text" id="destination" placeholder="Enter destination postcode (e.g., E1 6AN)">
+      <button onclick="showSavedPostcodes('destination')">Recent</button>
+      <ul id="destination-saved-list" class="saved-list"></ul>
+    </div>
+    <div class="form-group">
+      <label for="period">Period:</label>
+      <select id="period">
+        <option value="AM">AM</option>
+        <option value="PM">PM</option>
+      </select>
+    </div>
+    <button onclick="logTrip()">Add Trip</button>
+    <p id="output">Enter details above and click "Add Trip" to log your journey.</p>
+    <h2>Daily Totals</h2>
+    <p class="totals" id="daily-am">AM Total: 0 miles</p>
+    <p class="totals" id="daily-pm">PM Total: 0 miles</p>
+    <p class="totals" id="daily-total">Daily Total: 0 miles</p>
+    <h2>Monthly Total</h2>
+    <p class="totals" id="monthly-total">Monthly Total: 0 miles</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Period</th>
+          <th>Start Postcode</th>
+          <th>Destination Postcode</th>
+          <th>Distance (miles)</th>
+        </tr>
+      </thead>
+      <tbody id="trip-log"></tbody> <!-- Logs will appear here -->
+    </table>
+    <button onclick="exportLogsAsCSV()">Save Logs as CSV</button>
+    <button id="clear-all" onclick="clearAll()">Clear All Miles</button>
   </div>
-  <div class="form-group">
-    <label for="start">Start Postcode:</label>
-    <input type="text" id="start" placeholder="Enter start postcode (e.g., SW1A 1AA)">
-    <button onclick="showSavedPostcodes('start')">Recent</button>
-    <ul id="start-saved-list" class="saved-list"></ul>
-  </div>
-  <div class="form-group">
-    <label for="destination">Destination Postcode:</label>
-    <input type="text" id="destination" placeholder="Enter destination postcode (e.g., E1 6AN)">
-    <button onclick="showSavedPostcodes('destination')">Recent</button>
-    <ul id="destination-saved-list" class="saved-list"></ul>
-  </div>
-  <div class="form-group">
-    <label for="period">Period:</label>
-    <select id="period">
-      <option value="AM">AM</option>
-      <option value="PM">PM</option>
-    </select>
-  </div>
-  <button onclick="logTrip()">Add Trip</button>
-  <p id="output">Enter details above and click "Add Trip" to log your journey.</p>
-  
-  <h2>Daily Totals</h2>
-  <p class="totals" id="daily-am">AM Total: 0 miles</p>
-  <p class="totals" id="daily-pm">PM Total: 0 miles</p>
-  <p class="totals" id="daily-total">Daily Total: 0 miles</p>
-  <h2>Monthly Total</h2>
-  <p class="totals" id="monthly-total">Monthly Total: 0 miles</p>
-  
-  <table>
-    <thead>
-      <tr>
-        <th>Date</th>
-        <th>Period</th>
-        <th>Start Postcode</th>
-        <th>Destination Postcode</th>
-        <th>Distance (miles)</th>
-      </tr>
-    </thead>
-    <tbody id="trip-log"></tbody> <!-- Logs will appear here -->
-  </table>
-  
-  <!-- Button to save logs as a CSV file -->
-  <button onclick="exportLogsAsCSV()">Save Logs as CSV</button>
-  
-  <!-- Clear All Button -->
-  <button id="clear-all" onclick="clearAll()">Clear All Miles</button>
 
   <script src="script.js"></script>
 </body>

@@ -1,5 +1,5 @@
 body {
-  background: url('./images/background.jpg') no-repeat center center fixed; /* Path to the image */
+  background: url('https://unsplash.com/photos/a-group-of-bells-hanging-from-a-tree-_-Ofoh09q_o') no-repeat center center fixed; /* Path to the image */
   background-size: cover; /* Ensures the image fills the background */
   filter: blur(8px); /* Adds the blur effect */
   margin: 0;

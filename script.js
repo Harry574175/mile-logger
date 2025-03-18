@@ -2,16 +2,6 @@
 let dailyMiles = { AM: 0, PM: 0 }; 
 let monthlyTotal = 0; // Track total miles for the month
 
-// Add a personal note to be displayed at the top of the app
-function addPersonalNote() {
-  const note = document.createElement('p');
-  note.textContent = "From Harry to Mum xxxx"; // Your personal message
-  note.style.fontWeight = 'bold';
-  note.style.color = '#FF4500'; // A warm color for the message
-  note.style.fontSize = '1.2em';
-  document.body.insertBefore(note, document.body.firstChild); // Insert at the top of the body
-}
-
 async function geocodePostcode(postcode) {
   const apiKey = '5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101';
   const standardizedPostcode = postcode.replace(/\s+/g, '').toUpperCase();
@@ -175,9 +165,6 @@ function initializeTotals() {
 
   loadTripLogsFromStorage(); // Load table logs on initialization
   updateTotals();
-
-  // Add the personal note when initializing
-  addPersonalNote();
 }
 
 function clearAll() {
@@ -224,3 +211,11 @@ function exportLogsAsCSV() {
 }
 
 // Attach functions to the global scope
+window.logTrip = logTrip;
+window.showSavedPostcodes = showSavedPostcodes;
+window.clearAll = clearAll;
+window.initializeTotals = initializeTotals;
+window.exportLogsAsCSV = exportLogsAsCSV;
+
+// Initialize data on page load
+initializeTotals();

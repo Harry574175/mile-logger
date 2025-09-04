@@ -1,4 +1,4 @@
-// --- Persistent Name (localStorage) ---
+// Persistent Name (localStorage)
 function getLoggerName() {
   return localStorage.getItem('loggerName') || '';
 }
@@ -13,20 +13,22 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 });
 
-// --- UK Date Format ---
+// Strict UK Date Format (DD-MM-YYYY)
 function formatDateUK(dateStr) {
   if (!dateStr) return '';
   const [yyyy, mm, dd] = dateStr.split('-');
   return `${dd}-${mm}-${yyyy}`;
 }
 
-// --- Utility: get week commencing Monday for a date ---
+// Utility: get week commencing Monday for a date
 function getWeekCommencing(dateStr) {
   const date = new Date(dateStr);
   const day = date.getDay();
   const diff = date.getDate() - day + (day === 0 ? -6 : 1);
   const monday = new Date(date.setDate(diff));
-  return monday.toISOString().slice(0, 10);
+  // Format as DD-MM-YYYY
+  const isoMonday = monday.toISOString().slice(0, 10);
+  return formatDateUK(isoMonday);
 }
 
 // --- Distance Calculation (unchanged) ---
@@ -131,7 +133,7 @@ async function logTrip() {
     const weekCommencing = getWeekCommencing(date);
     const logs = getTripLogs();
     logs.push({
-      date,
+      date: formatDateUK(date),
       weekCommencing,
       period,
       startPostcode,
@@ -142,7 +144,6 @@ async function logTrip() {
     saveTripLogs(logs);
 
     renderLogs();
-    updateMonthlyTotal();
     document.getElementById('start').value = '';
     document.getElementById('destination').value = '';
     document.getElementById('output').textContent = "Trip added successfully!";
@@ -164,11 +165,15 @@ function renderLogs() {
     weeks[log.weekCommencing].push(log);
   });
 
-  // Render rows grouped by week
+  // Render rows grouped by week, add visual gap between weeks
   let firstWeek = true;
-  Object.keys(weeks).sort().forEach(week => {
+  Object.keys(weeks).sort((a, b) => {
+    // Sort by date, not string
+    const [aD, aM, aY] = a.split('-').map(Number);
+    const [bD, bM, bY] = b.split('-').map(Number);
+    return new Date(`${aY}-${aM}-${aD}`) - new Date(`${bY}-${bM}-${bD}`);
+  }).forEach(week => {
     if (!firstWeek) {
-      // Add visual gap between weeks
       const gapRow = document.createElement('tr');
       gapRow.innerHTML = `<td colspan="6" style="height: 1em; background: #fff;"></td>`;
       tableBody.appendChild(gapRow);
@@ -180,60 +185,38 @@ function renderLogs() {
 
     // Week summary row
     const weekRow = document.createElement('tr');
-    weekRow.innerHTML = `
-      <td colspan="6"><strong>Week Commencing: ${formatDateUK(week)} &mdash; Total Miles: ${weekTotal.toFixed(2)}</strong></td>
-    `;
+    weekRow.innerHTML =
+      `<td colspan="6"><strong>Week Commencing: ${week} &mdash; Total Miles: ${weekTotal.toFixed(2)}</strong></td>`;
     tableBody.appendChild(weekRow);
 
     // Individual trip rows
     weekLogs.forEach(log => {
       const row = document.createElement('tr');
       row.innerHTML = `
-        <td>${formatDateUK(log.date)}</td>
+        <td>${log.date}</td>
         <td>${log.period}</td>
         <td>${log.startPostcode}</td>
         <td>${log.destinationPostcode}</td>
         <td>${log.distance.toFixed(2)} miles</td>
-        <td>${log.name}</td>
-      `;
+        <td>${log.name}</td>`;
       tableBody.appendChild(row);
     });
   });
 }
 
-// --- Monthly Total (Current Month Only) ---
-function updateMonthlyTotal() {
-  const logs = getTripLogs();
-  const now = new Date();
-  const currentMonth = now.getMonth() + 1; // JS months: 0=Jan, 11=Dec
-  const currentYear = now.getFullYear();
-
-  // Only trips from the current month and year
-  const monthlyLogs = logs.filter(log => {
-    const [yyyy, mm] = log.date.split('-');
-    return parseInt(mm, 10) === currentMonth && parseInt(yyyy, 10) === currentYear;
-  });
-
-  const monthlyTotal = monthlyLogs.reduce((sum, l) => sum + l.distance, 0);
-
-  document.getElementById('monthly-total').textContent = `Monthly Total: ${monthlyTotal.toFixed(2)} miles`;
-}
-
 // --- Initialization ---
 function initializeTotals() {
   renderLogs();
-  updateMonthlyTotal();
 }
 
 // --- Clear All ---
 function clearAll() {
   localStorage.setItem('tripLogs', JSON.stringify([]));
   renderLogs();
-  updateMonthlyTotal();
   document.getElementById('output').textContent = "All logged miles have been cleared!";
 }
 
-// --- CSV Export (UK dates, name at top, weekly blank rows) ---
+// --- CSV Export (Name at top, then blank line, then weekly totals, UK date format) ---
 function exportLogsAsCSV() {
   const logs = getTripLogs();
   if (logs.length === 0) return;
@@ -247,12 +230,18 @@ function exportLogsAsCSV() {
     weeks[log.weekCommencing] += log.distance;
   });
 
-  let csvContent = `Name: ${name}\n\nWeek Commencing,Miles\n`;
+  // Sort weeks by actual date
+  const sortedWeeks = Object.keys(weeks).sort((a, b) => {
+    const [aD, aM, aY] = a.split('-').map(Number);
+    const [bD, bM, bY] = b.split('-').map(Number);
+    return new Date(`${aY}-${aM}-${aD}`) - new Date(`${bY}-${bM}-${bD}`);
+  });
 
-  Object.entries(weeks).sort((a, b) => a[0].localeCompare(b[0])).forEach(([week, miles], idx, arr) => {
-    csvContent += `${formatDateUK(week)},${miles.toFixed(2)}\n`;
-    // Add a blank row after each week except last
-    if (idx < arr.length - 1) csvContent += "\n";
+  let csvContent = `${name}\n\nWeek Commencing,Total Miles\n`;
+
+  sortedWeeks.forEach((week, idx) => {
+    csvContent += `${week},${weeks[week].toFixed(2)}\n`;
+    if (idx < sortedWeeks.length - 1) csvContent += "\n";
   });
 
   const blob = new Blob([csvContent], { type: 'text/csv' });

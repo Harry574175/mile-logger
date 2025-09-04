@@ -1,4 +1,4 @@
-// --- Persistent Name ---
+// Persistent Name (localStorage)
 function getLoggerName() {
   return localStorage.getItem('loggerName') || '';
 }
@@ -13,18 +13,16 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 });
 
-// --- Utilities ---
+// Utility: get week commencing Monday for a date
 function getWeekCommencing(dateStr) {
-  // Returns YYYY-MM-DD of Monday for the given date
   const date = new Date(dateStr);
   const day = date.getDay();
-  // Calculate Monday (day 1), Sunday is 0
   const diff = date.getDate() - day + (day === 0 ? -6 : 1);
   const monday = new Date(date.setDate(diff));
   return monday.toISOString().slice(0, 10);
 }
 
-// --- Distance Calculation (your code, unchanged) ---
+// --- Distance Calculation (unchanged) ---
 async function geocodePostcode(postcode) {
   const apiKey = '5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101';
   const standardizedPostcode = postcode.replace(/\s+/g, '').toUpperCase();
@@ -35,7 +33,7 @@ async function geocodePostcode(postcode) {
     const data = await response.json();
 
     if (data.features && data.features.length > 0) {
-      return data.features[0].geometry.coordinates; // [longitude, latitude]
+      return data.features[0].geometry.coordinates;
     } else {
       throw new Error(`Could not find location for the postcode: ${postcode}`);
     }
@@ -44,6 +42,7 @@ async function geocodePostcode(postcode) {
     throw new Error("Could not find location for the postcode.");
   }
 }
+
 async function calculateDistance(startPostcode, destinationPostcode) {
   try {
     const startCoords = await geocodePostcode(startPostcode);
@@ -57,8 +56,8 @@ async function calculateDistance(startPostcode, destinationPostcode) {
 
     if (data.features && data.features.length > 0) {
       const distanceInKm = data.features[0].properties.segments[0].distance / 1000;
-      const distanceInMiles = distanceInKm * 0.621371; // Convert km to miles
-      return distanceInMiles.toFixed(2); // Return distance in miles
+      const distanceInMiles = distanceInKm * 0.621371;
+      return distanceInMiles.toFixed(2);
     } else {
       throw new Error("Could not calculate distance.");
     }
@@ -68,7 +67,7 @@ async function calculateDistance(startPostcode, destinationPostcode) {
   }
 }
 
-// --- Postcode Save/Load (your code, unchanged) ---
+// --- Postcode Save/Load (unchanged) ---
 function savePostcode(postcode) {
   let savedPostcodes = JSON.parse(localStorage.getItem('postcodes')) || [];
   if (!savedPostcodes.includes(postcode)) {
@@ -81,21 +80,21 @@ function getPostcodes() {
 }
 function showSavedPostcodes(fieldId) {
   const list = document.getElementById(`${fieldId}-saved-list`);
-  list.innerHTML = ''; // Clear the list
+  list.innerHTML = '';
   const savedPostcodes = getPostcodes();
 
   savedPostcodes.forEach(postcode => {
     const listItem = document.createElement('li');
     listItem.textContent = postcode;
     listItem.addEventListener('click', function () {
-      document.getElementById(fieldId).value = postcode; // Populate the input field
-      list.innerHTML = ''; // Clear the list after selection
+      document.getElementById(fieldId).value = postcode;
+      list.innerHTML = '';
     });
     list.appendChild(listItem);
   });
 }
 
-// --- Trip Log Data (grouped by week) ---
+// --- Trip Log Data ---
 function getTripLogs() {
   return JSON.parse(localStorage.getItem('tripLogs')) || [];
 }
@@ -108,7 +107,7 @@ async function logTrip() {
   const date = document.getElementById('date').value;
   const startPostcode = document.getElementById('start').value;
   const destinationPostcode = document.getElementById('destination').value;
-  const period = document.getElementById('period').value; // AM or PM
+  const period = document.getElementById('period').value;
   const name = document.getElementById('logger-name').value;
 
   if (!date || !startPostcode || !destinationPostcode || !name) {
@@ -122,7 +121,6 @@ async function logTrip() {
     savePostcode(startPostcode);
     savePostcode(destinationPostcode);
 
-    // Add to log storage
     const weekCommencing = getWeekCommencing(date);
     const logs = getTripLogs();
     logs.push({
@@ -137,6 +135,7 @@ async function logTrip() {
     saveTripLogs(logs);
 
     renderLogs();
+    updateTotals();
     document.getElementById('start').value = '';
     document.getElementById('destination').value = '';
     document.getElementById('output').textContent = "Trip added successfully!";

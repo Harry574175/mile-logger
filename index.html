@@ -39,10 +39,6 @@
       background-color: #f4f4f4;
       font-weight: bold;
     }
-    .totals {
-      font-weight: bold;
-      margin-top: 20px;
-    }
     .saved-list {
       list-style: none;
       padding: 0;
@@ -75,13 +71,6 @@
     #clear-all:hover {
       background-color: #e60000;
     }
-    #personal-note {
-      font-weight: bold;
-      color: #FF4500;
-      font-size: 1.2em;
-      margin-bottom: 20px;
-      display: none; /* Hide personal note, replaced by name input */
-    }
     #logger-name-group {
       margin-bottom: 20px;
     }
@@ -102,7 +91,6 @@
 <body>
   <div class="overlay"></div>
   <div class="container">
-    <!-- Persistent Name Input (replaces personal note) -->
     <div id="logger-name-group">
       <label id="logger-name-label" for="logger-name">Name:</label>
       <input type="text" id="logger-name" placeholder="Enter your name" />
@@ -137,8 +125,6 @@
     </div>
     <button onclick="logTrip()">Add Trip</button>
     <p id="output">Enter details above and click "Add Trip" to log your journey.</p>
-    <h2>Monthly Total</h2>
-    <p class="totals" id="monthly-total">Monthly Total: 0 miles</p>
     <table>
       <thead>
         <tr>

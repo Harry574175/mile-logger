@@ -9,138 +9,33 @@
   <link rel="stylesheet" href="style.css">
 
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      line-height: 1.6;
-    }
-    #output {
-      font-weight: bold;
-      color: #007BFF;
-      margin-top: 10px;
-    }
-    label {
-      font-weight: bold;
-    }
-    .form-group {
-      margin-bottom: 10px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-    }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 8px;
-      text-align: left;
-    }
-    th {
-      background-color: #f4f4f4;
-      font-weight: bold;
-    }
-    .saved-list {
-      list-style: none;
-      padding: 0;
-      margin: 5px 0 0;
-      background-color: #f4f4f4;
-      border: 1px solid #ddd;
-      max-height: 100px;
-      overflow-y: auto;
-    }
-    .saved-list li {
-      padding: 5px;
-      cursor: pointer;
-    }
-    .saved-list li:hover {
-      background-color: #e0e0e0;
-    }
-    #clear-all {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background-color: #ff4d4d;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      font-size: 16px;
-      font-weight: bold;
-      cursor: pointer;
-      border-radius: 5px;
-    }
-    #clear-all:hover {
-      background-color: #e60000;
-    }
-    #logger-name-group {
-      margin-bottom: 20px;
-    }
-    #logger-name-label {
-      font-weight: bold;
-      color: #FF4500;
-      font-size: 1.2em;
-      margin-right: 10px;
-    }
-    #logger-name {
-      font-size: 1.1em;
-      padding: 5px 10px;
-      border-radius: 5px;
-      border: 1px solid #ddd;
-    }
+    /* … your existing styles … */
   </style>
 </head>
 <body>
   <div class="overlay"></div>
   <div class="container">
-    <div id="logger-name-group">
-      <label id="logger-name-label" for="logger-name">Name:</label>
-      <input type="text" id="logger-name" placeholder="Enter your name" />
-    </div>
+    <!-- … existing form and table … -->
 
-    <h1>Distance Tracker</h1>
-    <p style="color: gray; font-style: italic;">
-      *Note: This app calculates the shortest route distance for each journey.
-    </p>
-    <div class="form-group">
-      <label for="date">Date:</label>
-      <input type="date" id="date">
-    </div>
-    <div class="form-group">
-      <label for="start">Start Postcode:</label>
-      <input type="text" id="start" placeholder="Enter start postcode (e.g., SW1A 1AA)" onfocus="showSavedPostcodes('start')">
-      <button onclick="showSavedPostcodes('start')">Recent</button>
-      <ul id="start-saved-list" class="saved-list"></ul>
-    </div>
-    <div class="form-group">
-      <label for="destination">Destination Postcode:</label>
-      <input type="text" id="destination" placeholder="Enter destination postcode (e.g., E1 6AN)" onfocus="showSavedPostcodes('destination')">
-      <button onclick="showSavedPostcodes('destination')">Recent</button>
-      <ul id="destination-saved-list" class="saved-list"></ul>
-    </div>
-    <div class="form-group">
-      <label for="period">Period:</label>
-      <select id="period">
-        <option value="AM">AM</option>
-        <option value="PM">PM</option>
-      </select>
-    </div>
-    <button onclick="logTrip()">Add Trip</button>
-    <p id="output">Enter details above and click "Add Trip" to log your journey.</p>
-    <table>
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Period</th>
-          <th>Start Postcode</th>
-          <th>Destination Postcode</th>
-          <th>Distance (miles)</th>
-          <th>Name</th>
-        </tr>
-      </thead>
-      <tbody id="trip-log"></tbody>
-    </table>
-    <button onclick="exportLogsAsCSV()">Save Logs as CSV</button>
+    <!-- Changed: added id="export-csv", removed inline onclick -->
+    <button id="export-csv" type="button">Save Logs as CSV</button>
     <button id="clear-all" onclick="clearAll()">Clear All Miles</button>
   </div>
+
+  <!-- Load your main script -->
   <script src="script.js"></script>
+
+  <!-- Inline sanity-check + binding -->
+  <script>
+    // 1) Confirm script.js loaded
+    console.log('🚀 script.js loaded at', new Date().toISOString());
+
+    // 2) Check the CSV export function exists
+    console.log('exportLogsAsCSV is', typeof exportLogsAsCSV);
+
+    // 3) Bind the button to that function
+    document.getElementById('export-csv')
+            .addEventListener('click', exportLogsAsCSV);
+  </script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-console.log('🚀 script.jsscript loaded at', new Date().toISOString());
+console.log('🚀 script.js loaded at', new Date().toISOString());
 
 // --- Persistent Name (localStorage) ---
 function getLoggerName() {
@@ -206,4 +206,10 @@ function exportLogsAsCSV() {
   const sortedWeeks = Object.keys(weeks).sort((a, b) => {
     const [aD, aM, aY] = a.split('-').map(Number);
     const [bD, bM, bY] = b.split('-').map(Number);
-    return new Date(`${aY}-${aM
+    return new Date(`${aY}-${aM}-${aD}`) - new Date(`${bY}-${bM}-${bD}`);
+  });
+  sortedWeeks.forEach(week => {
+    const weekLogs = weeks[week];
+    const weekTotal = weekLogs.reduce((sum, l) => sum + l.distance, 0);
+    csv += `Week Commencing,${week}\n`;
+    csv

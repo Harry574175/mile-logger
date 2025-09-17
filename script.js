@@ -1,4 +1,6 @@
-// Persistent Name (localStorage)
+console.log('🚀 script.jsscript loaded at', new Date().toISOString());
+
+// --- Persistent Name (localStorage) ---
 function getLoggerName() {
   return localStorage.getItem('loggerName') || '';
 }
@@ -13,69 +15,65 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 });
 
-// Strict UK Date Format (DD-MM-YYYY)
+// --- UK Date Format ---
 function formatDateUK(dateStr) {
   if (!dateStr) return '';
   const [yyyy, mm, dd] = dateStr.split('-');
   return `${dd}-${mm}-${yyyy}`;
 }
-
-// Utility: get week commencing Monday for a date
 function getWeekCommencing(dateStr) {
   const date = new Date(dateStr);
   const day = date.getDay();
   const diff = date.getDate() - day + (day === 0 ? -6 : 1);
   const monday = new Date(date.setDate(diff));
-  const isoMonday = monday.toISOString().slice(0, 10);
-  return formatDateUK(isoMonday);
+  return formatDateUK(monday.toISOString().slice(0, 10));
 }
 
-// --- Distance Calculation (unchanged) ---
+// --- Geocoding & Distance ---
 async function geocodePostcode(postcode) {
   const apiKey = '5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101';
-  const standardizedPostcode = postcode.replace(/\s+/g, '').toUpperCase();
-  const url = `https://api.openrouteservice.org/geocode/search?api_key=${apiKey}&text=${encodeURIComponent(standardizedPostcode)}`;
+  const standardized = postcode.replace(/\s+/g, '').toUpperCase();
+  const url = `https://api.openrouteservice.org/geocode/search?api_key=${apiKey}&text=${encodeURIComponent(standardized)}`;
   try {
-    const response = await fetch(url);
-    const data = await response.json();
-    if (data.features && data.features.length > 0) {
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.features?.length > 0) {
       return data.features[0].geometry.coordinates;
     } else {
-      throw new Error(`Could not find location for the postcode: ${postcode}`);
+      throw new Error(`Could not find location for postcode: ${postcode}`);
     }
-  } catch (error) {
-    console.error("Error geocoding postcode:", error);
+  } catch (err) {
+    console.error("Geocode error:", err);
     throw new Error("Could not find location for the postcode.");
   }
 }
 
-async function calculateDistance(startPostcode, destinationPostcode) {
+async function calculateDistance(start, end) {
   try {
-    const startCoords = await geocodePostcode(startPostcode);
-    const destinationCoords = await geocodePostcode(destinationPostcode);
+    const startCoords = await geocodePostcode(start);
+    const endCoords = await geocodePostcode(end);
     const apiKey = '5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101';
-    const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${apiKey}&start=${startCoords[0]},${startCoords[1]}&end=${destinationCoords[0]},${destinationCoords[1]}&priority=shortest`;
-    const response = await fetch(url);
-    const data = await response.json();
-    if (data.features && data.features.length > 0) {
-      const distanceInKm = data.features[0].properties.segments[0].distance / 1000;
-      const distanceInMiles = distanceInKm * 0.621371;
-      return distanceInMiles.toFixed(2);
+    const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${apiKey}&start=${startCoords[0]},${startCoords[1]}&end=${endCoords[0]},${endCoords[1]}&priority=shortest`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.features?.length > 0) {
+      const km = data.features[0].properties.segments[0].distance / 1000;
+      return (km * 0.621371).toFixed(2);
     } else {
       throw new Error("Could not calculate distance.");
     }
-  } catch (error) {
-    console.error("Error calculating distance:", error);
+  } catch (err) {
+    console.error("Distance error:", err);
     throw new Error("Could not calculate distance.");
   }
 }
 
-// --- Postcode Save/Load (unchanged) ---
+// --- Postcode Save/Load ---
 function savePostcode(postcode) {
-  let savedPostcodes = JSON.parse(localStorage.getItem('postcodes')) || [];
-  if (!savedPostcodes.includes(postcode)) {
-    savedPostcodes.push(postcode);
-    localStorage.setItem('postcodes', JSON.stringify(savedPostcodes));
+  const saved = JSON.parse(localStorage.getItem('postcodes')) || [];
+  if (!saved.includes(postcode)) {
+    saved.push(postcode);
+    localStorage.setItem('postcodes', JSON.stringify(saved));
   }
 }
 function getPostcodes() {
@@ -83,16 +81,16 @@ function getPostcodes() {
 }
 function showSavedPostcodes(fieldId) {
   const list = document.getElementById(`${fieldId}-saved-list`);
+  if (!list) return;
   list.innerHTML = '';
-  const savedPostcodes = getPostcodes();
-  savedPostcodes.forEach(postcode => {
-    const listItem = document.createElement('li');
-    listItem.textContent = postcode;
-    listItem.addEventListener('click', function () {
+  getPostcodes().forEach(postcode => {
+    const li = document.createElement('li');
+    li.textContent = postcode;
+    li.onclick = () => {
       document.getElementById(fieldId).value = postcode;
       list.innerHTML = '';
-    });
-    list.appendChild(listItem);
+    };
+    list.appendChild(li);
   });
 }
 
@@ -104,29 +102,29 @@ function saveTripLogs(logs) {
   localStorage.setItem('tripLogs', JSON.stringify(logs));
 }
 
-// --- UI/Log Logic ---
+// --- Log Trip ---
 async function logTrip() {
   const date = document.getElementById('date').value;
-  const startPostcode = document.getElementById('start').value;
-  const destinationPostcode = document.getElementById('destination').value;
+  const start = document.getElementById('start').value;
+  const end = document.getElementById('destination').value;
   const period = document.getElementById('period').value;
   const name = document.getElementById('logger-name').value;
-  if (!date || !startPostcode || !destinationPostcode || !name) {
+  if (!date || !start || !end || !name) {
     document.getElementById('output').textContent = "Please fill in all fields, including name.";
     return;
   }
   try {
-    const distance = await calculateDistance(startPostcode, destinationPostcode);
-    savePostcode(startPostcode);
-    savePostcode(destinationPostcode);
-    const weekCommencing = getWeekCommencing(date);
+    const distance = await calculateDistance(start, end);
+    savePostcode(start);
+    savePostcode(end);
+    const week = getWeekCommencing(date);
     const logs = getTripLogs();
     logs.push({
       date: formatDateUK(date),
-      weekCommencing,
+      weekCommencing: week,
       period,
-      startPostcode,
-      destinationPostcode,
+      startPostcode: start,
+      destinationPostcode: end,
       distance: parseFloat(distance),
       name
     });
@@ -135,19 +133,20 @@ async function logTrip() {
     document.getElementById('start').value = '';
     document.getElementById('destination').value = '';
     document.getElementById('output').textContent = "Trip added successfully!";
-  } catch (error) {
-    document.getElementById('output').textContent = error.message;
+  } catch (err) {
+    document.getElementById('output').textContent = err.message;
   }
 }
 
-// --- Render Table with Weekly Gaps and UK Dates ---
+// --- Render Logs ---
 function renderLogs() {
   const logs = getTripLogs();
   const tableBody = document.getElementById('trip-log');
+  if (!tableBody) return;
   tableBody.innerHTML = '';
   const weeks = {};
   logs.forEach(log => {
-    if (!weeks[log.weekCommencing]) weeks[log.weekCommencing] = [];
+    weeks[log.weekCommencing] = weeks[log.weekCommencing] || [];
     weeks[log.weekCommencing].push(log);
   });
   let firstWeek = true;
@@ -157,17 +156,16 @@ function renderLogs() {
     return new Date(`${aY}-${aM}-${aD}`) - new Date(`${bY}-${bM}-${bD}`);
   }).forEach(week => {
     if (!firstWeek) {
-      const gapRow = document.createElement('tr');
-      gapRow.innerHTML = `<td colspan="6" style="height: 1em; background: #fff;"></td>`;
-      tableBody.appendChild(gapRow);
+      const gap = document.createElement('tr');
+      gap.innerHTML = `<td colspan="6" style="height: 1em; background: #fff;"></td>`;
+      tableBody.appendChild(gap);
     }
     firstWeek = false;
     const weekLogs = weeks[week];
-    const weekTotal = weekLogs.reduce((sum, l) => sum + l.distance, 0);
-    const weekRow = document.createElement('tr');
-    weekRow.innerHTML =
-      `<td colspan="6"><strong>Week Commencing: ${week} — Total Miles: ${weekTotal.toFixed(2)}</strong></td>`;
-    tableBody.appendChild(weekRow);
+    const total = weekLogs.reduce((sum, l) => sum + l.distance, 0);
+    const header = document.createElement('tr');
+    header.innerHTML = `<td colspan="6"><strong>Week Commencing: ${week} — Total Miles: ${total.toFixed(2)}</strong></td>`;
+    tableBody.appendChild(header);
     weekLogs.forEach(log => {
       const row = document.createElement('tr');
       row.innerHTML = `
@@ -182,11 +180,6 @@ function renderLogs() {
   });
 }
 
-// --- Initialization ---
-function initializeTotals() {
-  renderLogs();
-}
-
 // --- Clear All ---
 function clearAll() {
   localStorage.setItem('tripLogs', JSON.stringify([]));
@@ -194,7 +187,7 @@ function clearAll() {
   document.getElementById('output').textContent = "All logged miles have been cleared!";
 }
 
-// --- CSV Export (excel-friendly with detailed breakdown) ---
+// --- Export CSV ---
 function exportLogsAsCSV() {
   const logs = getTripLogs();
   if (!logs.length) return;
@@ -202,63 +195,15 @@ function exportLogsAsCSV() {
   const now = new Date();
   const isoDate = now.toISOString().slice(0, 10);
   const ukDate = formatDateUK(isoDate);
-
-  // UTF-8 BOM for Excel
   let csv = '\uFEFF';
   csv += `Report Generated On,${ukDate}\n`;
   csv += `Name,${name}\n\n`;
-
-  // Group logs by week
   const weeks = {};
   logs.forEach(log => {
     weeks[log.weekCommencing] = weeks[log.weekCommencing] || [];
     weeks[log.weekCommencing].push(log);
   });
-
-  // Sort weeks chronologically
   const sortedWeeks = Object.keys(weeks).sort((a, b) => {
     const [aD, aM, aY] = a.split('-').map(Number);
     const [bD, bM, bY] = b.split('-').map(Number);
-    return new Date(`${aY}-${aM}-${aD}`) - new Date(`${bY}-${bM}-${bD}`);
-  });
-
-  // Build CSV body
-  sortedWeeks.forEach(week => {
-    const weekLogs = weeks[week];
-    const weekTotal = weekLogs.reduce((sum, l) => sum + l.distance, 0);
-
-    csv += `Week Commencing,${week}\n`;
-    csv += `Date,Period,Start Postcode,Destination Postcode,Distance (miles)\n`;
-
-    weekLogs.forEach(l => {
-      csv += [
-        l.date,
-        l.period,
-        l.startPostcode,
-        l.destinationPostcode,
-        l.distance.toFixed(2)
-      ].join(',') + '\n';
-    });
-
-    csv += `Total Miles:,${weekTotal.toFixed(2)}\n\n`;
-  });
-
-  // Download
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const filename = `${name.replace(/\s+/g, '_')}_${isoDate}_mile_logs.csv`;
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = filename;
-  link.click();
-  URL.revokeObjectURL(link.href);
-}
-
-// --- Expose Functions ---
-window.logTrip = logTrip;
-window.showSavedPostcodes = showSavedPostcodes;
-window.clearAll = clearAll;
-window.initializeTotals = initializeTotals;
-window.exportLogsAsCSV = exportLogsAsCSV;
-
-// --- Initialize on page load ---
-document.addEventListener('DOMContentLoaded', initializeTotals);
+    return new Date(`${aY}-${aM

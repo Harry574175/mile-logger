@@ -213,3 +213,9 @@ function exportLogsAsCSV() {
     const weekTotal = weekLogs.reduce((sum, l) => sum + l.distance, 0);
     csv += `Week Commencing,${week}\n`;
     csv
+window.showSavedPostcodes = showSavedPostcodes;
+window.logTrip = logTrip;
+window.clearAll = clearAll;
+window.exportLogsAsCSV = exportLogsAsCSV;
+window.initializeTotals = initializeTotals;
+document.addEventListener('DOMContentLoaded', initializeTotals);

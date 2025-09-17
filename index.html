@@ -5,7 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Distance Tracker</title>
 
+  <!-- Optional: Prevent favicon 404 -->
   <link rel="icon" href="favicon.ico" type="image/x-icon" />
+
+  <!-- External CSS -->
   <link rel="stylesheet" href="style.css" />
 
   <style>
@@ -86,30 +89,11 @@
       border-radius: 5px;
       border: 1px solid #ddd;
     }
-
-    /* Toast message */
-    #refresh-toast {
-      position: fixed;
-      bottom: 30px;
-      left: 50%;
-      transform: translateX(-50%);
-      background-color: #333;
-      color: #fff;
-      padding: 12px 20px;
-      border-radius: 6px;
-      font-size: 0.95em;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-      opacity: 0;
-      transition: opacity 0.5s ease;
-      z-index: 9999;
-    }
-    #refresh-toast.show {
-      opacity: 1;
-    }
   </style>
 </head>
 <body>
   <div class="container">
+    <!-- Logger name input -->
     <div id="logger-name-group">
       <label id="logger-name-label" for="logger-name">Name:</label>
       <input type="text" id="logger-name" placeholder="Enter your name" />
@@ -120,6 +104,7 @@
       *Note: This app calculates the shortest route distance for each journey.
     </p>
 
+    <!-- Form inputs -->
     <div class="form-group">
       <label for="date">Date:</label>
       <input type="date" id="date" />
@@ -150,6 +135,7 @@
     <button id="add-trip">Add Trip</button>
     <p id="output">Enter details above and click "Add Trip" to log your journey.</p>
 
+    <!-- Trip log table -->
     <table>
       <thead>
         <tr>
@@ -164,15 +150,15 @@
       <tbody id="trip-log"></tbody>
     </table>
 
+    <!-- Buttons -->
     <button id="export-csv" type="button">Save Logs as CSV</button>
     <button id="clear-all">Clear All Miles</button>
   </div>
 
-  <!-- Toast message -->
-  <div id="refresh-toast">If anything looks off, press Ctrl + Shift + R to refresh the app completely.</div>
-
+  <!-- Load main script -->
   <script src="script.js"></script>
 
+  <!-- Bind all buttons and inputs safely -->
   <script>
     console.log('✅ HTML loaded and binding events');
 
@@ -192,13 +178,6 @@
     safeBind('add-trip', 'click', logTrip);
     safeBind('export-csv', 'click', exportLogsAsCSV);
     safeBind('clear-all', 'click', clearAll);
-
-    // Show toast message on load
-    window.addEventListener('load', () => {
-      const toast = document.getElementById('refresh-toast');
-      toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 6000);
-    });
   </script>
 </body>
 </html>

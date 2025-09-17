@@ -158,17 +158,26 @@
   <!-- Load main script -->
   <script src="script.js"></script>
 
-  <!-- Bind all buttons and inputs -->
+  <!-- Bind all buttons and inputs safely -->
   <script>
     console.log('✅ HTML loaded and binding events');
 
-    document.getElementById('start').addEventListener('focus', () => showSavedPostcodes('start'));
-    document.getElementById('destination').addEventListener('focus', () => showSavedPostcodes('destination'));
-    document.getElementById('start-recent').addEventListener('click', () => showSavedPostcodes('start'));
-    document.getElementById('destination-recent').addEventListener('click', () => showSavedPostcodes('destination'));
-    document.getElementById('add-trip').addEventListener('click', logTrip);
-    document.getElementById('export-csv').addEventListener('click', exportLogsAsCSV);
-    document.getElementById('clear-all').addEventListener('click', clearAll);
+    function safeBind(id, event, handler) {
+      const el = document.getElementById(id);
+      if (el && typeof handler === 'function') {
+        el.addEventListener(event, handler);
+      } else {
+        console.warn(`⚠️ Could not bind ${event} to #${id}`);
+      }
+    }
+
+    safeBind('start', 'focus', () => showSavedPostcodes('start'));
+    safeBind('destination', 'focus', () => showSavedPostcodes('destination'));
+    safeBind('start-recent', 'click', () => showSavedPostcodes('start'));
+    safeBind('destination-recent', 'click', () => showSavedPostcodes('destination'));
+    safeBind('add-trip', 'click', logTrip);
+    safeBind('export-csv', 'click', exportLogsAsCSV);
+    safeBind('clear-all', 'click', clearAll);
   </script>
 </body>
 </html>

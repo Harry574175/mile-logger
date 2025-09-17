@@ -1,41 +1,59 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Distance Tracker</title>
-
-  <!-- Link to external CSS file -->
-  <link rel="stylesheet" href="style.css">
-
-  <style>
-    /* … your existing styles … */
-  </style>
-</head>
-<body>
-  <div class="overlay"></div>
-  <div class="container">
-    <!-- … existing form and table … -->
-
-    <!-- Changed: added id="export-csv", removed inline onclick -->
-    <button id="export-csv" type="button">Save Logs as CSV</button>
-    <button id="clear-all" onclick="clearAll()">Clear All Miles</button>
+<div class="container">
+  <!-- Logger name input -->
+  <div id="logger-name-group">
+    <label id="logger-name-label" for="logger-name">Name:</label>
+    <input type="text" id="logger-name" placeholder="Enter your name" />
   </div>
 
-  <!-- Load your main script -->
-  <script src="script.js"></script>
+  <h1>Distance Tracker</h1>
+  <p style="color: gray; font-style: italic;">
+    *Note: This app calculates the shortest route distance for each journey.
+  </p>
 
-  <!-- Inline sanity-check + binding -->
-  <script>
-    // 1) Confirm script.js loaded
-    console.log('🚀 script.js loaded at', new Date().toISOString());
+  <!-- Form inputs -->
+  <div class="form-group">
+    <label for="date">Date:</label>
+    <input type="date" id="date">
+  </div>
+  <div class="form-group">
+    <label for="start">Start Postcode:</label>
+    <input type="text" id="start" placeholder="Enter start postcode" onfocus="showSavedPostcodes('start')">
+    <button onclick="showSavedPostcodes('start')">Recent</button>
+    <ul id="start-saved-list" class="saved-list"></ul>
+  </div>
+  <div class="form-group">
+    <label for="destination">Destination Postcode:</label>
+    <input type="text" id="destination" placeholder="Enter destination postcode" onfocus="showSavedPostcodes('destination')">
+    <button onclick="showSavedPostcodes('destination')">Recent</button>
+    <ul id="destination-saved-list" class="saved-list"></ul>
+  </div>
+  <div class="form-group">
+    <label for="period">Period:</label>
+    <select id="period">
+      <option value="AM">AM</option>
+      <option value="PM">PM</option>
+    </select>
+  </div>
 
-    // 2) Check the CSV export function exists
-    console.log('exportLogsAsCSV is', typeof exportLogsAsCSV);
+  <button onclick="logTrip()">Add Trip</button>
+  <p id="output">Enter details above and click "Add Trip" to log your journey.</p>
 
-    // 3) Bind the button to that function
-    document.getElementById('export-csv')
-            .addEventListener('click', exportLogsAsCSV);
-  </script>
-</body>
-</html>
+  <!-- ✅ This is the missing table -->
+  <table>
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Period</th>
+        <th>Start Postcode</th>
+        <th>Destination Postcode</th>
+        <th>Distance (miles)</th>
+        <th>Name</th>
+      </tr>
+    </thead>
+    <tbody id="trip-log"></tbody>
+  </table>
+
+  <!-- Buttons -->
+  <button id="export-csv" type="button">Save Logs as CSV</button>
+  <button id="clear-all" onclick="clearAll()">Clear All Miles</button>
+</div>

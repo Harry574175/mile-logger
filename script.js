@@ -7,7 +7,7 @@ function getLoggerName() {
 function setLoggerName(name) {
   localStorage.setItem('loggerName', name);
 }
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', () => {
   const nameInput = document.getElementById('logger-name');
   if (nameInput) {
     nameInput.value = getLoggerName();
@@ -32,8 +32,8 @@ function getWeekCommencing(dateStr) {
 // --- Geocoding & Distance ---
 async function geocodePostcode(postcode) {
   const apiKey = '5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101';
-  const standardized = postcode.replace(/\s+/g, '').toUpperCase();
-  const url = `https://api.openrouteservice.org/geocode/search?api_key=${apiKey}&text=${encodeURIComponent(standardized)}`;
+  const cleaned = postcode.replace(/\s+/g, '').toUpperCase();
+  const url = `https://api.openrouteservice.org/geocode/search?api_key=${apiKey}&text=${encodeURIComponent(cleaned)}`;
   const res = await fetch(url);
   const data = await res.json();
   if (data.features?.length > 0) {
@@ -47,9 +47,9 @@ async function calculateDistance(start, end) {
   const endCoords = await geocodePostcode(end);
   const apiKey = '5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101';
   const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${apiKey}` +
-    `&start=${startCoords[0]},${startCoords[1]}` +
-    `&end=${endCoords[0]},${endCoords[1]}` +
-    `&priority=shortest`;
+              `&start=${startCoords[0]},${startCoords[1]}` +
+              `&end=${endCoords[0]},${endCoords[1]}` +
+              `&priority=shortest`;
   const res = await fetch(url);
   const data = await res.json();
   if (data.features?.length > 0) {
@@ -101,10 +101,11 @@ async function logTrip() {
   const period = document.getElementById('period').value;
   const name = document.getElementById('logger-name').value;
   if (!date || !start || !end || !name) {
-    document.getElementById('output').textContent = 
+    document.getElementById('output').textContent =
       "Please fill in all fields, including name.";
     return;
   }
+
   try {
     const distance = await calculateDistance(start, end);
     savePostcode(start);
@@ -136,11 +137,13 @@ function renderLogs() {
   const tableBody = document.getElementById('trip-log');
   if (!tableBody) return;
   tableBody.innerHTML = '';
+
   const weeks = {};
   logs.forEach(log => {
     weeks[log.weekCommencing] = weeks[log.weekCommencing] || [];
     weeks[log.weekCommencing].push(log);
   });
+
   let firstWeek = true;
   Object.keys(weeks).sort((a, b) => {
     const [aD, aM, aY] = a.split('-').map(Number);
@@ -149,18 +152,19 @@ function renderLogs() {
   }).forEach(week => {
     if (!firstWeek) {
       const gap = document.createElement('tr');
-      gap.innerHTML = 
-        `<td colspan="6" style="height:1em;background:#fff;"></td>`;
+      gap.innerHTML = `<td colspan="6" style="height:1em;background:#fff;"></td>`;
       tableBody.appendChild(gap);
     }
     firstWeek = false;
+
     const weekLogs = weeks[week];
     const total = weekLogs.reduce((sum, l) => sum + l.distance, 0);
     const header = document.createElement('tr');
-    header.innerHTML = 
+    header.innerHTML =
       `<td colspan="6"><strong>Week Commencing: ${week}` +
       ` — Total Miles: ${total.toFixed(2)}</strong></td>`;
     tableBody.appendChild(header);
+
     weekLogs.forEach(log => {
       const row = document.createElement('tr');
       row.innerHTML = `
@@ -179,7 +183,7 @@ function renderLogs() {
 function clearAll() {
   localStorage.setItem('tripLogs', JSON.stringify([]));
   renderLogs();
-  document.getElementById('output').textContent = 
+  document.getElementById('output').textContent =
     "All logged miles have been cleared!";
 }
 
@@ -191,6 +195,7 @@ function exportLogsAsCSV() {
   const now = new Date();
   const isoDate = now.toISOString().slice(0, 10);
   const ukDate = formatDateUK(isoDate);
+
   let csv = '\uFEFF';
   csv += `Report Generated On,${ukDate}\n`;
   csv += `Name,${name}\n\n`;
@@ -234,13 +239,13 @@ function exportLogsAsCSV() {
 }
 
 // --- Expose functions globally ---
-window.getLoggerName       = getLoggerName;
-window.setLoggerName       = setLoggerName;
-window.showSavedPostcodes  = showSavedPostcodes;
-window.logTrip             = logTrip;
-window.clearAll            = clearAll;
-window.exportLogsAsCSV     = exportLogsAsCSV;
-window.initializeTotals    = renderLogs;
+window.getLoggerName      = getLoggerName;
+window.setLoggerName      = setLoggerName;
+window.showSavedPostcodes = showSavedPostcodes;
+window.logTrip            = logTrip;
+window.clearAll           = clearAll;
+window.exportLogsAsCSV    = exportLogsAsCSV;
+window.initializeTotals   = renderLogs;
 
 // --- Initialize on page load ---
 document.addEventListener('DOMContentLoaded', renderLogs);

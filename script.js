@@ -206,6 +206,4 @@ function exportLogsAsCSV() {
   const sortedWeeks = Object.keys(weeks).sort((a, b) => {
     const [aD, aM, aY] = a.split('-').map(Number);
     const [bD, bM, bY] = b.split('-').map(Number);
-    return new Date(`${aY}-${aM}-${aD}`) - new Date(`${bY}-${bM}-${bD}`);
-  });
-  sorted
+    return new Date(`${aY}-${aM}-${aD}`)

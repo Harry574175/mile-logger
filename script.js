@@ -191,6 +191,7 @@ function clearAll() {
 function exportLogsAsCSV() {
   const logs = getTripLogs();
   if (!logs.length) return;
+
   const name = getLoggerName() || logs[0].name || 'Unknown';
   const now = new Date();
   const isoDate = now.toISOString().slice(0, 10);
@@ -215,37 +216,9 @@ function exportLogsAsCSV() {
   sortedWeeks.forEach(week => {
     const weekLogs = weeks[week];
     const weekTotal = weekLogs.reduce((sum, l) => sum + l.distance, 0);
+
     csv += `Week Commencing,${week}\n`;
     csv += `Date,Period,Start Postcode,Destination Postcode,Distance (miles)\n`;
+
     weekLogs.forEach(l => {
-      csv += [
-        l.date,
-        l.period,
-        l.startPostcode,
-        l.destinationPostcode,
-        l.distance.toFixed(2)
-      ].join(',') + '\n';
-    });
-    csv += `Total Miles:,${weekTotal.toFixed(2)}\n\n`;
-  });
-
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const filename = `${name.replace(/\s+/g, '_')}_${isoDate}_mile_logs.csv`;
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = filename;
-  link.click();
-  URL.revokeObjectURL(link.href);
-}
-
-// --- Expose functions globally ---
-window.getLoggerName      = getLoggerName;
-window.setLoggerName      = setLoggerName;
-window.showSavedPostcodes = showSavedPostcodes;
-window.logTrip            = logTrip;
-window.clearAll           = clearAll;
-window.exportLogsAsCSV    = exportLogsAsCSV;
-window.initializeTotals   = renderLogs;
-
-// --- Initialize on page load ---
-document.addEventListener('DOMContentLoaded', renderLogs);
+      csv += `${l.date},${l.period},${l.startPostcode},${l.destinationPostcode},

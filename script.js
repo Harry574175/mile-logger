@@ -208,14 +208,4 @@ function exportLogsAsCSV() {
     const [bD, bM, bY] = b.split('-').map(Number);
     return new Date(`${aY}-${aM}-${aD}`) - new Date(`${bY}-${bM}-${bD}`);
   });
-  sortedWeeks.forEach(week => {
-    const weekLogs = weeks[week];
-    const weekTotal = weekLogs.reduce((sum, l) => sum + l.distance, 0);
-    csv += `Week Commencing,${week}\n`;
-    csv
-window.showSavedPostcodes = showSavedPostcodes;
-window.logTrip = logTrip;
-window.clearAll = clearAll;
-window.exportLogsAsCSV = exportLogsAsCSV;
-window.initializeTotals = initializeTotals;
-document.addEventListener('DOMContentLoaded', initializeTotals);
+  sortedWeeks

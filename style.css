@@ -29,7 +29,6 @@ body {
   margin: 20px auto;
 }
 
-/* Table entries */
 #trip-log tr {
   border: 1px solid #ccc;
   background: #ffffff;
@@ -44,14 +43,12 @@ body {
   background: #f3f3f3;
 }
 
-/* Gap between weeks */
 #trip-log tr.gap-row td {
   background: transparent !important;
   border: none !important;
   height: 12px;
 }
 
-/* Saved postcode lists */
 #start-saved-list,
 #destination-saved-list {
   list-style: none;
@@ -77,7 +74,6 @@ body {
   background: #f0f0f0;
 }
 
-/* Popup */
 .popup {
   position: fixed;
   top: 0;

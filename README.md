@@ -1,3 +1,6 @@
+![License: All Rights Reserved](https://img.shields.io/badge/License-All%20Rights%20Reserved-red.svg)
+
+
 # Mileage Logger
 
 A simple, fast, and accurate mileage logging tool designed for carers, support workers, and mobile staff.

@@ -1,71 +1,244 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mileage Logger</title>
-  <link rel="stylesheet" href="style.css?v=1.0">
-</head>
+console.log("script.js loaded");
 
-<body>
-  <div class="overlay"></div>
+// Helpers
+const LS = localStorage;
+const $ = id => document.getElementById(id);
 
-  <div class="container">
-    <h1>Mileage Logger</h1>
+// Storage
+const getLogs = () => JSON.parse(LS.getItem("tripLogs") || "[]");
+const saveLogs = logs => LS.setItem("tripLogs", JSON.stringify(logs));
+const getPC = () => JSON.parse(LS.getItem("postcodes") || "[]");
+const savePC = pc => {
+  const list = getPC();
+  if (!list.includes(pc)) {
+    list.push(pc);
+    LS.setItem("postcodes", JSON.stringify(list));
+  }
+};
 
-    <label for="logger-name">Name:</label>
-    <input type="text" id="logger-name" placeholder="Enter your name">
+// Date helpers
+const UK = d => {
+  const [y, m, d2] = d.split("-");
+  return `${d2}-${m}-${y}`;
+};
+const weekOf = d => {
+  const dt = new Date(d);
+  const day = dt.getDay();
+  const diff = dt.getDate() - day + (day === 0 ? -6 : 1);
+  const mon = new Date(dt.setDate(diff));
+  return UK(mon.toISOString().slice(0, 10));
+};
 
-    <label for="date">Date:</label>
-    <input type="date" id="date">
+// API helpers
+async function geo(pc) {
+  const key = "5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101";
+  const clean = pc.replace(/\s+/g, "");
+  const url = `https://api.openrouteservice.org/geocode/search?api_key=${key}&text=${clean}`;
+  const r = await fetch(url);
+  const j = await r.json();
+  if (j.features?.length) return j.features[0].geometry.coordinates;
+  throw new Error("Invalid postcode: " + pc);
+}
 
-    <label for="period">Period:</label>
-    <select id="period">
-      <option value="AM">AM</option>
-      <option value="PM">PM</option>
-      <option value="EVE">EVE</option>
-    </select>
+async function dist(a, b) {
+  const A = await geo(a);
+  const B = await geo(b);
+  const key = "5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101";
+  const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${key}&start=${A[0]},${A[1]}&end=${B[0]},${B[1]}`;
+  const r = await fetch(url);
+  const j = await r.json();
+  const km = j.features[0].properties.segments[0].distance / 1000;
+  return (km * 0.621371).toFixed(2);
+}
 
-    <label for="start">Start Postcode:</label>
-    <input type="text" id="start" placeholder="Start postcode">
-    <button id="start-show-btn" type="button">Show Saved</button>
-    <ul id="start-saved-list"></ul>
+// Saved postcode UI
+function showPC(field) {
+  const list = $(`${field}-saved-list`);
+  list.innerHTML = "";
+  getPC().forEach(pc => {
+    const li = document.createElement("li");
+    li.textContent = pc;
+    li.onclick = () => {
+      $(field).value = pc;
+      list.innerHTML = "";
+    };
+    list.appendChild(li);
+  });
+}
 
-    <label for="destination">Destination Postcode:</label>
-    <input type="text" id="destination" placeholder="Destination postcode">
-    <button id="destination-show-btn" type="button">Show Saved</button>
-    <ul id="destination-saved-list"></ul>
+// Delete popup
+let pending = null;
+function showDel(id) {
+  pending = id;
+  $("delete-popup").classList.remove("hidden");
+}
+function hideDel() {
+  pending = null;
+  $("delete-popup").classList.add("hidden");
+}
 
-    <button id="log-trip-btn" type="button">Log Trip</button>
-    <button id="clear-all-btn" type="button">Clear All</button>
-    <button id="export-csv-btn" type="button">Export CSV</button>
+// Log trip
+async function logTrip() {
+  const date = $("date").value;
+  const start = $("start").value;
+  const end = $("destination").value;
+  const period = $("period").value;
+  const name = $("logger-name").value;
+  const out = $("output");
 
-    <p id="output"></p>
+  if (!date || !start || !end || !name) {
+    out.textContent = "Please fill in all fields.";
+    return;
+  }
 
-    <table>
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Period</th>
-          <th>Start</th>
-          <th>Destination</th>
-          <th>Distance</th>
-          <th>Name</th>
-        </tr>
-      </thead>
-      <tbody id="trip-log"></tbody>
-    </table>
-  </div>
+  try {
+    const miles = await dist(start, end);
+    savePC(start);
+    savePC(end);
 
-  <div id="delete-popup" class="popup hidden">
-    <div class="popup-content">
-      <p>Are you sure you want to delete this entry?</p>
-      <button id="delete-yes" type="button">Yes</button>
-      <button id="delete-no" type="button">No</button>
-    </div>
-  </div>
+    const logs = getLogs();
+    logs.push({
+      id: crypto.randomUUID(),
+      date: UK(date),
+      week: weekOf(date),
+      period,
+      start,
+      end,
+      distance: parseFloat(miles),
+      name
+    });
 
-  <!-- Cache‑buster ensures mobile loads the newest script -->
-  <script src="script.js?v=1.1"></script>
-</body>
-</html>
+    saveLogs(logs);
+    render();
+    out.textContent = "Trip added!";
+    $("start").value = "";
+    $("destination").value = "";
+  } catch (e) {
+    out.textContent = e.message;
+  }
+}
+
+// Render logs
+function render() {
+  const logs = getLogs();
+  const table = $("trip-log");
+  table.innerHTML = "";
+
+  const weeks = {};
+  logs.forEach(l => {
+    if (!weeks[l.week]) weeks[l.week] = [];
+    weeks[l.week].push(l);
+  });
+
+  Object.keys(weeks)
+    .sort((a, b) => {
+      const A = a.split("-").reverse().join("-");
+      const B = b.split("-").reverse().join("-");
+      return new Date(A) - new Date(B);
+    })
+    .forEach((week, i) => {
+      if (i > 0) {
+        const gap = document.createElement("tr");
+        gap.classList.add("gap-row");
+        gap.innerHTML = "<td colspan='6'></td>";
+        table.appendChild(gap);
+      }
+
+      const wk = weeks[week];
+      const total = wk.reduce((s, l) => s + l.distance, 0);
+
+      const head = document.createElement("tr");
+      head.innerHTML = `<td colspan="6"><strong>Week Commencing: ${week} — Total Miles: ${total.toFixed(2)}</strong></td>`;
+      table.appendChild(head);
+
+      wk.forEach(l => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${l.date}</td>
+          <td>${l.period}</td>
+          <td>${l.start}</td>
+          <td>${l.end}</td>
+          <td>${l.distance.toFixed(2)} miles</td>
+          <td>${l.name}</td>
+        `;
+
+        row.addEventListener("contextmenu", e => {
+          e.preventDefault();
+          showDel(l.id);
+        });
+
+        let timer;
+        row.addEventListener("touchstart", () => {
+          timer = setTimeout(() => showDel(l.id), 700);
+        });
+        row.addEventListener("touchend", () => clearTimeout(timer));
+        row.addEventListener("touchmove", () => clearTimeout(timer));
+
+        table.appendChild(row);
+      });
+    });
+}
+
+// Clear all
+function clearAll() {
+  saveLogs([]);
+  render();
+  $("output").textContent = "All entries cleared.";
+}
+
+// Export CSV with weekly totals
+function exportCSV() {
+  const logs = getLogs();
+  if (!logs.length) return;
+
+  const weeks = {};
+  logs.forEach(l => {
+    if (!weeks[l.week]) weeks[l.week] = [];
+    weeks[l.week].push(l);
+  });
+
+  let csv = "Week Commencing,Date,Period,Start,Destination,Distance,Name\n";
+
+  Object.keys(weeks)
+    .sort((a, b) => {
+      const A = a.split("-").reverse().join("-");
+      const B = b.split("-").reverse().join("-");
+      return new Date(A) - new Date(B);
+    })
+    .forEach(week => {
+      const wk = weeks[week];
+      const total = wk.reduce((sum, l) => sum + l.distance, 0);
+
+      wk.forEach(l => {
+        csv += `${week},${l.date},${l.period},${l.start},${l.end},${l.distance.toFixed(2)},${l.name}\n`;
+      });
+
+      csv += `Total Miles for ${week},,,,,${total.toFixed(2)}\n\n`;
+    });
+
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "mileage_log.csv";
+  a.click();
+}
+
+// DOM Ready
+document.addEventListener("DOMContentLoaded", () => {
+  $("log-trip-btn").onclick = logTrip;
+  $("clear-all-btn").onclick = clearAll;
+  $("export-csv-btn").onclick = exportCSV;
+
+  $("start-show-btn").onclick = () => showPC("start");
+  $("destination-show-btn").onclick = () => showPC("destination");
+
+  $("delete-yes").onclick = () => {
+    saveLogs(getLogs().filter(l => l.id !== pending));
+    hideDel();
+    render();
+  };
+  $("delete-no").onclick = hideDel;
+
+  render();
+});

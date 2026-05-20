@@ -1,204 +1,178 @@
 console.log("script.js loaded");
 
-// Persistent name
-function getLoggerName() {
-  return localStorage.getItem("loggerName") || "";
-}
-function setLoggerName(name) {
-  localStorage.setItem("loggerName", name);
-}
+// Helpers
+const LS = localStorage;
+const $ = id => document.getElementById(id);
 
-// Date formatting
-function formatDateUK(dateStr) {
-  if (!dateStr) return "";
-  const [yyyy, mm, dd] = dateStr.split("-");
-  return `${dd}-${mm}-${yyyy}`;
-}
-
-function getWeekCommencing(dateStr) {
-  const date = new Date(dateStr);
-  const day = date.getDay();
-  const diff = date.getDate() - day + (day === 0 ? -6 : 1);
-  const monday = new Date(date.setDate(diff));
-  return formatDateUK(monday.toISOString().slice(0, 10));
-}
-
-// Geocoding
-async function geocodePostcode(postcode) {
-  const apiKey = "5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101";
-  const cleaned = postcode.replace(/\s+/g, "").toUpperCase();
-  const url = `https://api.openrouteservice.org/geocode/search?api_key=${apiKey}&text=${encodeURIComponent(cleaned)}`;
-  const res = await fetch(url);
-  const data = await res.json();
-  if (data.features && data.features.length > 0) {
-    return data.features[0].geometry.coordinates;
+// Storage
+const getLogs = () => JSON.parse(LS.getItem("tripLogs") || "[]");
+const saveLogs = logs => LS.setItem("tripLogs", JSON.stringify(logs));
+const getPC = () => JSON.parse(LS.getItem("postcodes") || "[]");
+const savePC = pc => {
+  const list = getPC();
+  if (!list.includes(pc)) {
+    list.push(pc);
+    LS.setItem("postcodes", JSON.stringify(list));
   }
-  throw new Error(`Could not find location for postcode: ${postcode}`);
+};
+
+// Date helpers
+const UK = d => {
+  const [y, m, d2] = d.split("-");
+  return `${d2}-${m}-${y}`;
+};
+const weekOf = d => {
+  const dt = new Date(d);
+  const day = dt.getDay();
+  const diff = dt.getDate() - day + (day === 0 ? -6 : 1);
+  const mon = new Date(dt.setDate(diff));
+  return UK(mon.toISOString().slice(0, 10));
+};
+
+// API helpers
+async function geo(pc) {
+  const key = "5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101";
+  const clean = pc.replace(/\s+/g, "");
+  const url = `https://api.openrouteservice.org/geocode/search?api_key=${key}&text=${clean}`;
+  const r = await fetch(url);
+  const j = await r.json();
+  if (j.features?.length) return j.features[0].geometry.coordinates;
+  throw new Error("Invalid postcode: " + pc);
 }
 
-// Distance calculation
-async function calculateDistance(start, end) {
-  const startCoords = await geocodePostcode(start);
-  const endCoords = await geocodePostcode(end);
-  const apiKey = "5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101";
-  const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${apiKey}&start=${startCoords[0]},${startCoords[1]}&end=${endCoords[0]},${endCoords[1]}&priority=shortest`;
-  const res = await fetch(url);
-  const data = await res.json();
-  if (data.features && data.features.length > 0) {
-    const km = data.features[0].properties.segments[0].distance / 1000;
-    return (km * 0.621371).toFixed(2);
-  }
-  throw new Error("Could not calculate distance.");
+async function dist(a, b) {
+  const A = await geo(a);
+  const B = await geo(b);
+  const key = "5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101";
+  const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${key}&start=${A[0]},${A[1]}&end=${B[0]},${B[1]}`;
+  const r = await fetch(url);
+  const j = await r.json();
+  const km = j.features[0].properties.segments[0].distance / 1000;
+  return (km * 0.621371).toFixed(2);
 }
 
-// Postcode saving
-function savePostcode(pc) {
-  const saved = JSON.parse(localStorage.getItem("postcodes")) || [];
-  if (!saved.includes(pc)) {
-    saved.push(pc);
-    localStorage.setItem("postcodes", JSON.stringify(saved));
-  }
-}
-
-function getPostcodes() {
-  return JSON.parse(localStorage.getItem("postcodes")) || [];
-}
-
-function showSavedPostcodes(fieldId) {
-  const list = document.getElementById(`${fieldId}-saved-list`);
+// Saved postcode UI
+function showPC(field) {
+  const list = $(`${field}-saved-list`);
   list.innerHTML = "";
-  getPostcodes().forEach(pc => {
+  getPC().forEach(pc => {
     const li = document.createElement("li");
     li.textContent = pc;
     li.onclick = () => {
-      document.getElementById(fieldId).value = pc;
+      $(field).value = pc;
       list.innerHTML = "";
     };
     list.appendChild(li);
   });
 }
 
-// Trip logs
-function getTripLogs() {
-  return JSON.parse(localStorage.getItem("tripLogs")) || [];
+// Delete popup
+let pending = null;
+function showDel(id) {
+  pending = id;
+  $("delete-popup").classList.remove("hidden");
 }
-
-function saveTripLogs(logs) {
-  localStorage.setItem("tripLogs", JSON.stringify(logs));
-}
-
-// Delete entry
-function deleteEntry(id) {
-  const logs = getTripLogs().filter(log => log.id !== id);
-  saveTripLogs(logs);
-  renderLogs();
-}
-
-let pendingDeleteId = null;
-
-function showDeletePopup(id) {
-  pendingDeleteId = id;
-  document.getElementById("delete-popup").classList.remove("hidden");
-}
-
-function hideDeletePopup() {
-  pendingDeleteId = null;
-  document.getElementById("delete-popup").classList.add("hidden");
+function hideDel() {
+  pending = null;
+  $("delete-popup").classList.add("hidden");
 }
 
 // Log trip
 async function logTrip() {
-  const date = document.getElementById("date").value;
-  const start = document.getElementById("start").value;
-  const end = document.getElementById("destination").value;
-  const period = document.getElementById("period").value;
-  const name = document.getElementById("logger-name").value;
-  const output = document.getElementById("output");
+  const date = $("date").value;
+  const start = $("start").value;
+  const end = $("destination").value;
+  const period = $("period").value;
+  const name = $("logger-name").value;
+  const out = $("output");
 
   if (!date || !start || !end || !name) {
-    output.textContent = "Please fill in all fields.";
+    out.textContent = "Please fill in all fields.";
     return;
   }
 
   try {
-    const distance = await calculateDistance(start, end);
-    savePostcode(start);
-    savePostcode(end);
+    const miles = await dist(start, end);
+    savePC(start);
+    savePC(end);
 
-    const logs = getTripLogs();
+    const logs = getLogs();
     logs.push({
       id: crypto.randomUUID(),
-      date: formatDateUK(date),
-      weekCommencing: getWeekCommencing(date),
+      date: UK(date),
+      week: weekOf(date),
       period,
-      startPostcode: start,
-      destinationPostcode: end,
-      distance: parseFloat(distance),
+      start,
+      end,
+      distance: parseFloat(miles),
       name
     });
 
-    saveTripLogs(logs);
-    renderLogs();
-    output.textContent = "Trip added!";
-    document.getElementById("start").value = "";
-    document.getElementById("destination").value = "";
-  } catch (err) {
-    output.textContent = err.message;
+    saveLogs(logs);
+    render();
+    out.textContent = "Trip added!";
+    $("start").value = "";
+    $("destination").value = "";
+  } catch (e) {
+    out.textContent = e.message;
   }
 }
 
 // Render logs
-function renderLogs() {
-  const logs = getTripLogs();
-  const table = document.getElementById("trip-log");
+function render() {
+  const logs = getLogs();
+  const table = $("trip-log");
   table.innerHTML = "";
 
   const weeks = {};
-
-  logs.forEach(log => {
-    if (!weeks[log.weekCommencing]) weeks[log.weekCommencing] = [];
-    weeks[log.weekCommencing].push(log);
+  logs.forEach(l => {
+    if (!weeks[l.week]) weeks[l.week] = [];
+    weeks[l.week].push(l);
   });
 
   Object.keys(weeks)
-    .sort((a, b) => new Date(a.split("-").reverse().join("-")) - new Date(b.split("-").reverse().join("-")))
-    .forEach((week, index) => {
-      if (index > 0) {
+    .sort((a, b) => {
+      const A = a.split("-").reverse().join("-");
+      const B = b.split("-").reverse().join("-");
+      return new Date(A) - new Date(B);
+    })
+    .forEach((week, i) => {
+      if (i > 0) {
         const gap = document.createElement("tr");
         gap.classList.add("gap-row");
         gap.innerHTML = "<td colspan='6'></td>";
         table.appendChild(gap);
       }
 
-      const weekLogs = weeks[week];
-      const total = weekLogs.reduce((sum, l) => sum + l.distance, 0);
+      const wk = weeks[week];
+      const total = wk.reduce((s, l) => s + l.distance, 0);
 
-      const header = document.createElement("tr");
-      header.innerHTML = `<td colspan="6"><strong>Week Commencing: ${week} — Total Miles: ${total.toFixed(2)}</strong></td>`;
-      table.appendChild(header);
+      const head = document.createElement("tr");
+      head.innerHTML = `<td colspan="6"><strong>Week Commencing: ${week} — Total Miles: ${total.toFixed(2)}</strong></td>`;
+      table.appendChild(head);
 
-      weekLogs.forEach(log => {
+      wk.forEach(l => {
         const row = document.createElement("tr");
         row.innerHTML = `
-          <td>${log.date}</td>
-          <td>${log.period}</td>
-          <td>${log.startPostcode}</td>
-          <td>${log.destinationPostcode}</td>
-          <td>${log.distance.toFixed(2)} miles</td>
-          <td>${log.name}</td>
+          <td>${l.date}</td>
+          <td>${l.period}</td>
+          <td>${l.start}</td>
+          <td>${l.end}</td>
+          <td>${l.distance.toFixed(2)} miles</td>
+          <td>${l.name}</td>
         `;
 
         row.addEventListener("contextmenu", e => {
           e.preventDefault();
-          showDeletePopup(log.id);
+          showDel(l.id);
         });
 
-        let pressTimer;
+        let timer;
         row.addEventListener("touchstart", () => {
-          pressTimer = setTimeout(() => showDeletePopup(log.id), 700);
+          timer = setTimeout(() => showDel(l.id), 700);
         });
-        row.addEventListener("touchend", () => clearTimeout(pressTimer));
-        row.addEventListener("touchmove", () => clearTimeout(pressTimer));
+        row.addEventListener("touchend", () => clearTimeout(timer));
+        row.addEventListener("touchmove", () => clearTimeout(timer));
 
         table.appendChild(row);
       });
@@ -207,20 +181,19 @@ function renderLogs() {
 
 // Clear all
 function clearAll() {
-  saveTripLogs([]);
-  renderLogs();
-  document.getElementById("output").textContent = "All entries cleared.";
+  saveLogs([]);
+  render();
+  $("output").textContent = "All entries cleared.";
 }
 
 // Export CSV
-function exportLogsAsCSV() {
-  const logs = getTripLogs();
+function exportCSV() {
+  const logs = getLogs();
   if (!logs.length) return;
 
   let csv = "Date,Period,Start,Destination,Distance,Name\n";
-
   logs.forEach(l => {
-    csv += `${l.date},${l.period},${l.startPostcode},${l.destinationPostcode},${l.distance},${l.name}\n`;
+    csv += `${l.date},${l.period},${l.start},${l.end},${l.distance},${l.name}\n`;
   });
 
   const blob = new Blob([csv], { type: "text/csv" });
@@ -233,22 +206,19 @@ function exportLogsAsCSV() {
 
 // DOM Ready
 document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("logger-name").value = getLoggerName();
-  document.getElementById("logger-name").addEventListener("input", e => setLoggerName(e.target.value));
+  $("log-trip-btn").onclick = logTrip;
+  $("clear-all-btn").onclick = clearAll;
+  $("export-csv-btn").onclick = exportCSV;
 
-  document.getElementById("log-trip-btn").addEventListener("click", logTrip);
-  document.getElementById("clear-all-btn").addEventListener("click", clearAll);
-  document.getElementById("export-csv-btn").addEventListener("click", exportLogsAsCSV);
+  $("start-show-btn").onclick = () => showPC("start");
+  $("destination-show-btn").onclick = () => showPC("destination");
 
-  document.getElementById("start-show-btn").addEventListener("click", () => showSavedPostcodes("start"));
-  document.getElementById("destination-show-btn").addEventListener("click", () => showSavedPostcodes("destination"));
+  $("delete-yes").onclick = () => {
+    saveLogs(getLogs().filter(l => l.id !== pending));
+    hideDel();
+    render();
+  };
+  $("delete-no").onclick = hideDel;
 
-  document.getElementById("delete-yes").addEventListener("click", () => {
-    deleteEntry(pendingDeleteId);
-    hideDeletePopup();
-  });
-
-  document.getElementById("delete-no").addEventListener("click", hideDeletePopup);
-
-  renderLogs();
+  render();
 });

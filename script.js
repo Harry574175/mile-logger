@@ -186,39 +186,6 @@ function clearAll() {
   $("output").textContent = "All entries cleared.";
 }
 
-// Export CSV
+// ✅ Export CSV with weekly totals
 function exportCSV() {
   const logs = getLogs();
-  if (!logs.length) return;
-
-  let csv = "Date,Period,Start,Destination,Distance,Name\n";
-  logs.forEach(l => {
-    csv += `${l.date},${l.period},${l.start},${l.end},${l.distance},${l.name}\n`;
-  });
-
-  const blob = new Blob([csv], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "mileage_log.csv";
-  a.click();
-}
-
-// DOM Ready
-document.addEventListener("DOMContentLoaded", () => {
-  $("log-trip-btn").onclick = logTrip;
-  $("clear-all-btn").onclick = clearAll;
-  $("export-csv-btn").onclick = exportCSV;
-
-  $("start-show-btn").onclick = () => showPC("start");
-  $("destination-show-btn").onclick = () => showPC("destination");
-
-  $("delete-yes").onclick = () => {
-    saveLogs(getLogs().filter(l => l.id !== pending));
-    hideDel();
-    render();
-  };
-  $("delete-no").onclick = hideDel;
-
-  render();
-});

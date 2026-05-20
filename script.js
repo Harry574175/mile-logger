@@ -1,6 +1,6 @@
-console.log('🚀 script.js loaded at', new Date().toISOString());
+console.log('🚀 script.js loaded successfully');
 
-// --- Persistent Name (localStorage) ---
+// Persistent name
 function getLoggerName() {
   return localStorage.getItem('loggerName') || '';
 }
@@ -8,7 +8,7 @@ function setLoggerName(name) {
   localStorage.setItem('loggerName', name);
 }
 
-// --- UK Date Format ---
+// Date formatting
 function formatDateUK(dateStr) {
   if (!dateStr) return '';
   const [yyyy, mm, dd] = dateStr.split('-');
@@ -22,13 +22,11 @@ function getWeekCommencing(dateStr) {
   return formatDateUK(monday.toISOString().slice(0, 10));
 }
 
-// --- Geocoding & Distance ---
+// Geocoding and distance
 async function geocodePostcode(postcode) {
   const apiKey = '5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101';
   const cleaned = postcode.replace(/\s+/g, '').toUpperCase();
-  const url =
-    `https://api.openrouteservice.org/geocode/search?api_key=${apiKey}` +
-    `&text=${encodeURIComponent(cleaned)}`;
+  const url = `https://api.openrouteservice.org/geocode/search?api_key=${apiKey}&text=${encodeURIComponent(cleaned)}`;
   const res = await fetch(url);
   const data = await res.json();
   if (data.features && data.features.length > 0) {
@@ -41,11 +39,7 @@ async function calculateDistance(start, end) {
   const startCoords = await geocodePostcode(start);
   const endCoords = await geocodePostcode(end);
   const apiKey = '5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101';
-  const url =
-    `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${apiKey}` +
-    `&start=${startCoords[0]},${startCoords[1]}` +
-    `&end=${endCoords[0]},${endCoords[1]}` +
-    `&priority=shortest`;
+  const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${apiKey}&start=${startCoords[0]},${startCoords[1]}&end=${endCoords[0]},${endCoords[1]}&priority=shortest`;
   const res = await fetch(url);
   const data = await res.json();
   if (data.features && data.features.length > 0) {
@@ -55,7 +49,7 @@ async function calculateDistance(start, end) {
   throw new Error('Could not calculate distance.');
 }
 
-// --- Postcode Save/Load ---
+// Postcode save/load
 function savePostcode(postcode) {
   const saved = JSON.parse(localStorage.getItem('postcodes')) || [];
   if (!saved.includes(postcode)) {
@@ -73,223 +67,4 @@ function showSavedPostcodes(fieldId) {
   getPostcodes().forEach(pc => {
     const li = document.createElement('li');
     li.textContent = pc;
-    li.onclick = () => {
-      document.getElementById(fieldId).value = pc;
-      list.innerHTML = '';
-    };
-    list.appendChild(li);
-  });
-}
-
-// --- Trip Log Data ---
-function getTripLogs() {
-  return JSON.parse(localStorage.getItem('tripLogs')) || [];
-}
-function saveTripLogs(logs) {
-  localStorage.setItem('tripLogs', JSON.stringify(logs));
-}
-
-// --- Delete Entry ---
-function deleteEntry(id) {
-  const logs = getTripLogs();
-  const updated = logs.filter(log => log.id !== id);
-  saveTripLogs(updated);
-  renderLogs();
-}
-
-// --- Delete Popup Logic ---
-let pendingDeleteId = null;
-
-function showDeletePopup(id) {
-  pendingDeleteId = id;
-  const popup = document.getElementById('delete-popup');
-  if (popup) popup.classList.remove('hidden');
-}
-
-function hideDeletePopup() {
-  const popup = document.getElementById('delete-popup');
-  if (popup) popup.classList.add('hidden');
-  pendingDeleteId = null;
-}
-
-// --- Log Trip ---
-async function logTrip() {
-  const date = document.getElementById('date').value;
-  const start = document.getElementById('start').value;
-  const end = document.getElementById('destination').value;
-  const period = document.getElementById('period').value;
-  const name = document.getElementById('logger-name').value;
-  const output = document.getElementById('output');
-
-  if (!date || !start || !end || !name) {
-    output.textContent = 'Please fill in all fields, including name.';
-    return;
-  }
-
-  try {
-    const distance = await calculateDistance(start, end);
-    savePostcode(start);
-    savePostcode(end);
-
-    const week = getWeekCommencing(date);
-    const logs = getTripLogs();
-    logs.push({
-      id: crypto.randomUUID(),
-      date: formatDateUK(date),
-      weekCommencing: week,
-      period,
-      startPostcode: start,
-      destinationPostcode: end,
-      distance: parseFloat(distance),
-      name
-    });
-    saveTripLogs(logs);
-    renderLogs();
-
-    document.getElementById('start').value = '';
-    document.getElementById('destination').value = '';
-    output.textContent = 'Trip added successfully!';
-  } catch (err) {
-    output.textContent = err.message;
-  }
-}
-
-// --- Render Logs ---
-function renderLogs() {
-  const logs = getTripLogs();
-  const tableBody = document.getElementById('trip-log');
-  if (!tableBody) return;
-  tableBody.innerHTML = '';
-
-  const weeks = {};
-  logs.forEach(log => {
-    if (!weeks[log.weekCommencing]) weeks[log.weekCommencing] = [];
-    weeks[log.weekCommencing].push(log);
-  });
-
-  let firstWeek = true;
-  Object.keys(weeks)
-    .sort((a, b) => {
-      const [aD, aM, aY] = a.split('-').map(Number);
-      const [bD, bM, bY] = b.split('-').map(Number);
-      return new Date(`${aY}-${aM}-${aD}`) - new Date(`${bY}-${bM}-${bD}`);
-    })
-    .forEach(week => {
-      if (!firstWeek) {
-        const gap = document.createElement('tr');
-        gap.classList.add('gap-row');
-        gap.innerHTML = '<td colspan="6"></td>';
-        tableBody.appendChild(gap);
-      }
-      firstWeek = false;
-
-      const weekLogs = weeks[week];
-      const total = weekLogs.reduce((sum, l) => sum + l.distance, 0);
-
-      const header = document.createElement('tr');
-      header.innerHTML =
-        `<td colspan="6"><strong>Week Commencing: ${week} — Total Miles: ${total.toFixed(2)}</strong></td>`;
-      tableBody.appendChild(header);
-
-      weekLogs.forEach(log => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${log.date}</td>
-          <td>${log.period}</td>
-          <td>${log.startPostcode}</td>
-          <td>${log.destinationPostcode}</td>
-          <td>${log.distance.toFixed(2)} miles</td>
-          <td>${log.name}</td>`;
-
-        // Right-click delete
-        row.addEventListener('contextmenu', e => {
-          e.preventDefault();
-          showDeletePopup(log.id);
-        });
-
-        // Long-press delete
-        let pressTimer = null;
-        row.addEventListener('touchstart', () => {
-          pressTimer = setTimeout(() => showDeletePopup(log.id), 700);
-        });
-        row.addEventListener('touchend', () => clearTimeout(pressTimer));
-        row.addEventListener('touchmove', () => clearTimeout(pressTimer));
-
-        tableBody.appendChild(row);
-      });
-    });
-}
-
-// --- Clear All ---
-function clearAll() {
-  localStorage.setItem('tripLogs', JSON.stringify([]));
-  renderLogs();
-  document.getElementById('output').textContent =
-    'All logged miles have been cleared!';
-}
-
-// --- Export CSV ---
-function exportLogsAsCSV() {
-  const logs = getTripLogs();
-  if (!logs.length) return;
-
-  const name = getLoggerName() || logs[0].name || 'Unknown';
-  const now = new Date();
-  const isoDate = now.toISOString().slice(0, 10);
-  const ukDate = formatDateUK(isoDate);
-
-  let csv = '\uFEFF';
-  csv += `Report Generated On,${ukDate}\n`;
-  csv += `Name,${name}\n\n`;
-
-  const weeks = {};
-  logs.forEach(log => {
-    if (!weeks[log.weekCommencing]) weeks[log.weekCommencing] = [];
-    weeks[log.weekCommencing].push(log);
-  });
-
-  const sortedWeeks = Object.keys(weeks).sort((a, b) => {
-    const [aD, aM, aY] = a.split('-').map(Number);
-    const [bD, bM, bY] = b.split('-').map(Number);
-    return new Date(`${aY}-${aM}-${aD}`) - new Date(`${bY}-${bM}-${bD}`);
-  });
-
-  sortedWeeks.forEach(week => {
-    const weekLogs = weeks[week];
-    const weekTotal = weekLogs.reduce((sum, l) => sum + l.distance, 0);
-
-    csv += `Week Commencing,${week}\n`;
-    csv += `Date,Period,Start Postcode,Destination Postcode,Distance (miles)\n`;
-
-    weekLogs.forEach(l => {
-      csv += `${l.date},${l.period},${l.startPostcode},${l.destinationPostcode},${l.distance.toFixed(2)}\n`;
-    });
-
-    csv += `Total Miles,${weekTotal.toFixed(2)}\n\n`;
-  });
-
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.setAttribute('href', url);
-  link.setAttribute('download', `Trip_Log_${ukDate}.csv`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-}
-
-// --- DOM Ready: Bind Events ---
-document.addEventListener('DOMContentLoaded', () => {
-  const nameInput = document.getElementById('logger-name');
-  if (nameInput) {
-    nameInput.value = getLoggerName();
-    nameInput.addEventListener('input', e => setLoggerName(e.target.value));
-  }
-
-  document.getElementById('log-trip-btn').addEventListener('click', logTrip);
-  document.getElementById('clear-all-btn').addEventListener('click', clearAll);
-  document.getElementById('export-csv-btn').addEventListener('click', exportLogsAsCSV);
-
-  ['start', 'destination'].forEach(fieldId => {
-    const input = document.getElementById(fieldId);
-    const button
+    li.onclick = () =>

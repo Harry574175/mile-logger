@@ -1,4 +1,4 @@
-console.log("script.js v5 loaded");
+console.log("script.js loaded");
 
 // Helpers
 const LS = localStorage;
@@ -29,33 +29,35 @@ const weekOf = d => {
   return UK(mon.toISOString().slice(0, 10));
 };
 
-// API helpers
+// API helpers - Safe static string definitions
 async function geo(pc) {
   const key = "5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101";
   const clean = pc.replace(/\s+/g, "").toUpperCase();
   
-  // FIXED: Bulletproof explicit string definition for the modern geocode path
-  const url = "https://heigit.org" + key + "&text=" + clean;
+  // FIXED: Locked solid structural string composition
+  const baseUrl = "https://heigit.org";
+  const url = baseUrl + "?api_key=" + key + "&text=" + clean;
   
   const r = await fetch(url);
   const j = await r.json();
   if (j.features && j.features.length > 0) {
-    return j.features[0].geometry.coordinates; // Returns [longitude, latitude]
+    return j.features[0].geometry.coordinates; // Safely array map coordinates [longitude, latitude]
   }
   throw new Error("Invalid postcode: " + pc);
 }
 
 async function dist(a, b) {
-  const A = await geo(a);
-  const B = await geo(b);
+  const A = await geo(a); // [lon, lat]
+  const B = await geo(b); // [lon, lat]
   const key = "5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101";
   
-  // FIXED: Extracted clean string arrays for lon,lat queries explicitly
-  const startParam = A[0] + "," + A[1];
-  const endParam = B[0] + "," + B[1];
+  // FIXED: Extracted coordinate arrays cleanly into explicit index points
+  const startLonLat = A[0] + "," + A[1];
+  const endLonLat = B[0] + "," + B[1];
   
-  // FIXED: Bulletproof explicit string definition for modern HeiGIT directions path
-  const url = "https://heigit.org" + key + "&start=" + startParam + "&end=" + endParam;
+  // FIXED: Locked solid structural string composition
+  const baseUrl = "https://api.heigit.org/openrouteservice/v2/directions/driving-car";
+  const url = baseUrl + "?api_key=" + key + "&start=" + startLonLat + "&end=" + endLonLat;
   
   const r = await fetch(url);
   const j = await r.json();

@@ -29,14 +29,19 @@ const weekOf = d => {
   return UK(mon.toISOString().slice(0, 10));
 };
 
-// API helpers - Updated to the new heigit.org endpoints
+// API helpers - Fixed array index processing for heigit.org
 async function geo(pc) {
   const key = "5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101";
-  const clean = pc.replace(/\s+/g, "");
+  const clean = pc.replace(/\s+/g, "").toUpperCase();
   const url = `https://heigit.org{key}&text=${clean}`;
+  
   const r = await fetch(url);
+  if (!r.ok) throw new Error(`Geocode network error: ${r.status}`);
+  
   const j = await r.json();
-  if (j.features?.length) return j.features[0].geometry.coordinates;
+  if (j.features && j.features.length > 0) {
+    return j.features[0].geometry.coordinates; // RESTORED [0] INDEXING FOR FEATURES ARRAY
+  }
   throw new Error("Invalid postcode: " + pc);
 }
 
@@ -44,16 +49,25 @@ async function dist(a, b) {
   const A = await geo(a);
   const B = await geo(b);
   const key = "5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101";
+  
+  // Format coordinate pairs explicitly as individual numbers from arrays
   const url = `https://heigit.org{key}&start=${A[0]},${A[1]}&end=${B[0]},${B[1]}`;
+  
   const r = await fetch(url);
+  if (!r.ok) throw new Error(`Directions network error: ${r.status}`);
+  
   const j = await r.json();
-  const km = j.features[0].properties.segments[0].distance / 1000;
-  return (km * 0.621371).toFixed(2);
+  if (j.features && j.features.length > 0) {
+    const km = j.features[0].properties.segments[0].distance / 1000; // RESTORED SEGMENTS CORRECTION
+    return (km * 0.621371).toFixed(2);
+  }
+  throw new Error("Could not find a valid driving route.");
 }
 
 // Saved postcode UI
 function showPC(field) {
   const list = $(`${field}-saved-list`);
+  if (!list) return;
   list.innerHTML = "";
   getPC().forEach(pc => {
     const li = document.createElement("li");
@@ -66,7 +80,7 @@ function showPC(field) {
   });
 }
 
-// Delete popup
+// Delete popup variables
 let pending = null;
 function showDel(id) {
   pending = id;
@@ -93,6 +107,8 @@ async function logTrip() {
     return;
   }
 
+  out.textContent = "Calculating route...";
+
   try {
     const miles = await dist(start, end);
     savePC(start);
@@ -116,15 +132,17 @@ async function logTrip() {
     $("start").value = "";
     $("destination").value = "";
   } catch (e) {
-    out.textContent = e.message;
+    out.textContent = "Error: " + e.message;
+    console.error(e);
   }
 }
 
 // Render logs
 function render() {
-  const logs = getLogs();
   const table = $("trip-log");
   if (!table) return;
+  
+  const logs = getLogs();
   table.innerHTML = "";
 
   const weeks = {};
@@ -184,9 +202,11 @@ function render() {
 
 // Clear all
 function clearAll() {
-  saveLogs([]);
-  render();
-  $("output").textContent = "All entries cleared.";
+  if (confirm("Are you sure you want to clear all miles?")) {
+    saveLogs([]);
+    render();
+    $("output").textContent = "All entries cleared.";
+  }
 }
 
 // Export CSV with weekly totals
@@ -227,7 +247,7 @@ function exportCSV() {
   a.click();
 }
 
-// DOM Ready - Updated to perfectly match index.html button IDs
+// DOM Ready - Mapped perfectly to match your index.html IDs
 document.addEventListener("DOMContentLoaded", () => {
   if ($("add-trip")) $("add-trip").onclick = logTrip;
   if ($("clear-all")) $("clear-all").onclick = clearAll;

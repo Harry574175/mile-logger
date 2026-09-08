@@ -1,4 +1,4 @@
-console.log("script.js loaded");
+console.log("🚀 Latest script.js version loaded successfully!");
 
 // Helpers
 const LS = localStorage;
@@ -29,10 +29,10 @@ const weekOf = d => {
   return UK(mon.toISOString().slice(0, 10));
 };
 
-// API helpers - Restored precise data parsing indices
+// API helpers
 async function geo(pc) {
   const key = "5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101";
-  const clean = pc.replace(/\s+/g, "");
+  const clean = pc.replace(/\s+/g, "").toUpperCase();
   const url = `https://heigit.org{key}&text=${clean}`;
   
   const r = await fetch(url);
@@ -40,7 +40,7 @@ async function geo(pc) {
   
   const j = await r.json();
   if (j.features && j.features.length > 0) {
-    return j.features[0].geometry.coordinates;
+    return j.features[0].geometry.coordinates; // [lon, lat]
   }
   throw new Error("Invalid postcode: " + pc);
 }
@@ -49,6 +49,8 @@ async function dist(a, b) {
   const A = await geo(a);
   const B = await geo(b);
   const key = "5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101";
+  
+  // Format coordinate pairs explicitly as lon,lat strings
   const url = `https://heigit.org{key}&start=${A[0]},${A[1]}&end=${B[0]},${B[1]}`;
   
   const r = await fetch(url);
@@ -231,7 +233,7 @@ function exportCSV() {
       const total = wk.reduce((sum, l) => sum + l.distance, 0);
 
       wk.forEach(l => {
-        csv += `${week},${l.date},${l.period},${l.start},${l.end},${l.distance.toFixed(2)},${l.name}\n\n`;
+        csv += `${week},${l.date},${l.period},${l.start},${l.end},${l.distance.toFixed(2)},${l.name}\n`;
       });
 
       csv += `Total Miles for ${week},,,,,${total.toFixed(2)}\n\n`;

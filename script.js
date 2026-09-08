@@ -29,11 +29,10 @@ const weekOf = d => {
   return UK(mon.toISOString().slice(0, 10));
 };
 
-// API helpers - Completely fixed syntax strings targeting OpenRouteService's modern servers
+// API helpers
 async function geo(pc) {
   const key = "5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101";
   const clean = pc.replace(/\s+/g, "");
-  // FIXED: Restored complete template literals with $ signs and new base path
   const url = `https://heigit.org{key}&text=${clean}`;
   const r = await fetch(url);
   const j = await r.json();
@@ -45,7 +44,6 @@ async function dist(a, b) {
   const A = await geo(a);
   const B = await geo(b);
   const key = "5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101";
-  // FIXED: Restored complete template literals with $ signs and new base path
   const url = `https://heigit.org{key}&start=${A[0]},${A[1]}&end=${B[0]},${B[1]}`;
   const r = await fetch(url);
   const j = await r.json();
@@ -56,6 +54,7 @@ async function dist(a, b) {
 // Saved postcode UI
 function showPC(field) {
   const list = $(`${field}-saved-list`);
+  if (!list) return;
   list.innerHTML = "";
   getPC().forEach(pc => {
     const li = document.createElement("li");
@@ -72,11 +71,13 @@ function showPC(field) {
 let pending = null;
 function showDel(id) {
   pending = id;
-  $("delete-popup").classList.remove("hidden");
+  const popup = $("delete-popup");
+  if (popup) popup.classList.remove("hidden");
 }
 function hideDel() {
   pending = null;
-  $("delete-popup").classList.add("hidden");
+  const popup = $("delete-popup");
+  if (popup) popup.classList.add("hidden");
 }
 
 // Log trip
@@ -124,6 +125,7 @@ async function logTrip() {
 function render() {
   const logs = getLogs();
   const table = $("trip-log");
+  if (!table) return;
   table.innerHTML = "";
 
   const weeks = {};
@@ -226,21 +228,23 @@ function exportCSV() {
   a.click();
 }
 
-// DOM Ready
+// DOM Ready - FIXED BUTTON IDS TO MATCH YOUR INDEX.HTML
 document.addEventListener("DOMContentLoaded", () => {
-  $("log-trip-btn").onclick = logTrip;
-  $("clear-all-btn").onclick = clearAll;
-  $("export-csv-btn").onclick = exportCSV;
+  if ($("add-trip")) $("add-trip").onclick = logTrip;
+  if ($("clear-all")) $("clear-all").onclick = clearAll;
+  if ($("export-csv")) $("export-csv").onclick = exportCSV;
 
-  $("start-show-btn").onclick = () => showPC("start");
-  $("destination-show-btn").onclick = () => showPC("destination");
+  if ($("start-recent")) $("start-recent").onclick = () => showPC("start");
+  if ($("destination-recent")) $("destination-recent").onclick = () => showPC("destination");
 
-  $("delete-yes").onclick = () => {
-    saveLogs(getLogs().filter(l => l.id !== pending));
-    hideDel();
-    render();
-  };
-  $("delete-no").onclick = hideDel;
+  if ($("delete-yes")) {
+    $("delete-yes").onclick = () => {
+      saveLogs(getLogs().filter(l => l.id !== pending));
+      hideDel();
+      render();
+    };
+  }
+  if ($("delete-no")) $("delete-no").onclick = hideDel;
 
   render();
 });

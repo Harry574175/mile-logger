@@ -29,52 +29,39 @@ const weekOf = d => {
   return UK(mon.toISOString().slice(0, 10));
 };
 
-// API KEY + BASE URL (updated)
-const ORS_KEY = "5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101";
-const ORS_BASE = "https://api.heigit.org/openrouteservice";
+// MAPBOX TOKEN
+const MAPBOX_TOKEN = "pk.eyJ1IjoiaGFycnkwNjAyIiwiYSI6ImNtdHN0dG95eTAybDIyd3B1ajhxb3IxcmwifQ.mhvajIOOJ6H-Y_ltI6nmbw";
 
-// API helpers
+// Geocode postcode → [lng, lat]
 async function geo(pc) {
   const clean = pc.replace(/\s+/g, "");
-  const url = `${ORS_BASE}/geocode/search?api_key=${ORS_KEY}&text=${clean}`;
+  const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${clean}.json?access_token=${MAPBOX_TOKEN}`;
 
   const r = await fetch(url);
   if (!r.ok) throw new Error("Geocoding failed. Check postcode.");
 
   const j = await r.json();
-  if (j.features?.length) return j.features[0].geometry.coordinates;
+  if (j.features?.length) return j.features[0].center;
 
   throw new Error("Invalid postcode: " + pc);
 }
 
+// Distance between two postcodes (miles)
 async function dist(a, b) {
   const A = await geo(a);
   const B = await geo(b);
 
-  const url = `${ORS_BASE}/v2/directions/driving-car`;
+  const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${A[0]},${A[1]};${B[0]},${B[1]}?geometries=geojson&access_token=${MAPBOX_TOKEN}`;
 
-  const body = {
-    coordinates: [
-      [A[0], A[1]],
-      [B[0], B[1]]
-    ]
-  };
-
-  const r = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Authorization": ORS_KEY,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(body)
-  });
-
+  const r = await fetch(url);
   if (!r.ok) throw new Error("Routing failed. Try again.");
 
   const j = await r.json();
 
-  const km = j.features[0].properties.segments[0].distance / 1000;
-  return (km * 0.621371).toFixed(2);
+  const meters = j.routes[0].distance;
+  const miles = meters / 1609.34;
+
+  return miles.toFixed(2);
 }
 
 // Saved postcode UI

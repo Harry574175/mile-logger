@@ -1,161 +1,71 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Distance Tracker</title>
-
-  <!-- Prevent favicon 404 notice -->
-  <link rel="icon" href="data:;base64,iVBORw0KGgo=">
-
-  <!-- External CSS -->
-  <link rel="stylesheet" href="style.css" />
-
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      line-height: 1.6;
-    }
-    #output {
-      font-weight: bold;
-      color: #007BFF;
-      margin-top: 10px;
-    }
-    label {
-      font-weight: bold;
-    }
-    .form-group {
-      margin-bottom: 10px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-    }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 8px;
-      text-align: left;
-    }
-    th {
-      background-color: #f4f4f4;
-      font-weight: bold;
-    }
-    .saved-list {
-      list-style: none;
-      padding: 0;
-      margin: 5px 0 0;
-      background-color: #f4f4f4;
-      border: 1px solid #ddd;
-      max-height: 100px;
-      overflow-y: auto;
-    }
-    .saved-list li {
-      padding: 5px;
-      cursor: pointer;
-    }
-    .saved-list li:hover {
-      background-color: #e0e0e0;
-    }
-    #clear-all {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background-color: #ff4d4d;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      font-size: 16px;
-      font-weight: bold;
-      cursor: pointer;
-      border-radius: 5px;
-    }
-    #clear-all:hover {
-      background-color: #e60000;
-    }
-    #logger-name-group {
-      margin-bottom: 20px;
-    }
-    #logger-name-label {
-      font-weight: bold;
-      color: #FF4500;
-      font-size: 1.2em;
-      margin-right: 10px;
-    }
-    #logger-name {
-      font-size: 1.1em;
-      padding: 5px 10px;
-      border-radius: 5px;
-      border: 1px solid #ddd;
-    }
-  </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mileage Logger</title>
+  <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
+  <div class="overlay"></div>
+
   <div class="container">
-    <!-- Logger name input -->
-    <div id="logger-name-group">
-      <label id="logger-name-label" for="logger-name">Name:</label>
-      <input type="text" id="logger-name" placeholder="Enter your name" />
-    </div>
+    <h1>Mileage Logger</h1>
 
-    <h1>Distance Tracker</h1>
-    <p style="color: gray; font-style: italic;">
-      *Note: This app calculates the shortest route distance for each journey.
-    </p>
+    <label for="logger-name">Name:</label>
+    <input type="text" id="logger-name" placeholder="Enter your name">
 
-    <!-- Form inputs -->
-    <div class="form-group">
-      <label for="date">Date:</label>
-      <input type="date" id="date" />
-    </div>
+    <label for="date">Date:</label>
+    <input type="date" id="date">
 
-    <div class="form-group">
-      <label for="start">Start Postcode:</label>
-      <input type="text" id="start" placeholder="Enter start postcode" />
-      <button id="start-recent">Recent</button>
-      <ul id="start-saved-list" class="saved-list"></ul>
-    </div>
+    <label for="period">Period:</label>
+    <select id="period">
+      <option value="AM">AM</option>
+      <option value="PM">PM</option>
+      <option value="EVE">EVE</option>
+    </select>
 
-    <div class="form-group">
-      <label for="destination">Destination Postcode:</label>
-      <input type="text" id="destination" placeholder="Enter destination postcode" />
-      <button id="destination-recent">Recent</button>
-      <ul id="destination-saved-list" class="saved-list"></ul>
-    </div>
+    <label for="start">Start Postcode:</label>
+    <input type="text" id="start" placeholder="Start postcode">
+    <button id="start-show-btn" type="button">Show Saved</button>
+    <ul id="start-saved-list"></ul>
 
-    <div class="form-group">
-      <label for="period">Period:</label>
-      <select id="period">
-        <option value="AM">AM</option>
-        <option value="PM">PM</option>
-      </select>
-    </div>
+    <label for="destination">Destination Postcode:</label>
+    <input type="text" id="destination" placeholder="Destination postcode">
+    <button id="destination-show-btn" type="button">Show Saved</button>
+    <ul id="destination-saved-list"></ul>
 
-    <button id="add-trip">Add Trip</button>
-    <p id="output">Enter details above and click "Add Trip" to log your journey.</p>
+    <button id="log-trip-btn" type="button">Log Trip</button>
+    <button id="clear-all-btn" type="button">Clear All</button>
+    <button id="export-csv-btn" type="button">Export CSV</button>
 
-    <!-- Trip log table -->
+    <p id="output"></p>
+
     <table>
       <thead>
         <tr>
           <th>Date</th>
           <th>Period</th>
-          <th>Start Postcode</th>
-          <th>Destination Postcode</th>
-          <th>Distance (miles)</th>
+          <th>Start</th>
+          <th>Destination</th>
+          <th>Distance</th>
           <th>Name</th>
         </tr>
       </thead>
       <tbody id="trip-log"></tbody>
     </table>
-
-    <!-- Buttons -->
-    <button id="export-csv" type="button">Save Logs as CSV</button>
-    <button id="clear-all">Clear All Miles</button>
   </div>
 
-  <!-- Load main script -->
-  <script src="script.js"></script>
+  <div id="delete-popup" class="popup hidden">
+    <div class="popup-content">
+      <p>Are you sure you want to delete this entry?</p>
+      <button id="delete-yes" type="button">Yes</button>
+      <button id="delete-no" type="button">No</button>
+    </div>
+  </div>
+
+  <!-- Added version query string to completely bypass browser caching -->
+  <script src="script.js?v=3"></script>
 </body>
 </html>

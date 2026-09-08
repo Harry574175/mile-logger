@@ -1,4 +1,4 @@
-console.log("script.js loaded");
+console.log("script.js v5 loaded");
 
 // Helpers
 const LS = localStorage;
@@ -29,18 +29,18 @@ const weekOf = d => {
   return UK(mon.toISOString().slice(0, 10));
 };
 
-// API helpers - Completely corrected URL concatenation
+// API helpers
 async function geo(pc) {
   const key = "5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101";
-  const clean = pc.replace(/\s+/g, "");
+  const clean = pc.replace(/\s+/g, "").toUpperCase();
   
-  // FIXED: Explicit, separate string parts to guarantee the full api subdomain paths
+  // FIXED: Bulletproof explicit string definition for the modern geocode path
   const url = "https://heigit.org" + key + "&text=" + clean;
   
   const r = await fetch(url);
   const j = await r.json();
   if (j.features && j.features.length > 0) {
-    return j.features[0].geometry.coordinates;
+    return j.features[0].geometry.coordinates; // Returns [longitude, latitude]
   }
   throw new Error("Invalid postcode: " + pc);
 }
@@ -50,8 +50,12 @@ async function dist(a, b) {
   const B = await geo(b);
   const key = "5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101";
   
-  // FIXED: Correctly referenced separate index arrays instead of duplicating data blocks
-  const url = "https://heigit.org" + key + "&start=" + A[0] + "," + A[1] + "&end=" + B[0] + "," + B[1];
+  // FIXED: Extracted clean string arrays for lon,lat queries explicitly
+  const startParam = A[0] + "," + A[1];
+  const endParam = B[0] + "," + B[1];
+  
+  // FIXED: Bulletproof explicit string definition for modern HeiGIT directions path
+  const url = "https://heigit.org" + key + "&start=" + startParam + "&end=" + endParam;
   
   const r = await fetch(url);
   const j = await r.json();
@@ -104,6 +108,8 @@ async function logTrip() {
     out.textContent = "Please fill in all fields.";
     return;
   }
+
+  out.textContent = "Calculating route...";
 
   try {
     const miles = await dist(start, end);

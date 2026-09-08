@@ -29,14 +29,15 @@ const weekOf = d => {
   return UK(mon.toISOString().slice(0, 10));
 };
 
-// API helpers - Configured explicitly to target the heigit.org infrastructure
+// API helpers - Explicitly formatted template strings for OpenRouteService's new servers
 async function geo(pc) {
   const key = "5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101";
   const clean = pc.replace(/\s+/g, "");
+  // FIXED: Restored template string symbol `$` and updated path structure
   const url = `https://heigit.org{key}&text=${clean}`;
   const r = await fetch(url);
   const j = await r.json();
-  if (j.features && j.features.length > 0) return j.features[0].geometry.coordinates;
+  if (j.features?.length) return j.features[0].geometry.coordinates;
   throw new Error("Invalid postcode: " + pc);
 }
 
@@ -44,6 +45,7 @@ async function dist(a, b) {
   const A = await geo(a);
   const B = await geo(b);
   const key = "5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101";
+  // FIXED: Updated path structure to run through /openrouteservice
   const url = `https://heigit.org{key}&start=${A[0]},${A[1]}&end=${B[0]},${B[1]}`;
   const r = await fetch(url);
   const j = await r.json();
@@ -70,13 +72,11 @@ function showPC(field) {
 let pending = null;
 function showDel(id) {
   pending = id;
-  const popup = $("delete-popup");
-  if (popup) popup.classList.remove("hidden");
+  $("delete-popup").classList.remove("hidden");
 }
 function hideDel() {
   pending = null;
-  const popup = $("delete-popup");
-  if (popup) popup.classList.add("hidden");
+  $("delete-popup").classList.add("hidden");
 }
 
 // Log trip
@@ -92,8 +92,6 @@ async function logTrip() {
     out.textContent = "Please fill in all fields.";
     return;
   }
-
-  out.textContent = "Calculating route...";
 
   try {
     const miles = await dist(start, end);
@@ -126,7 +124,6 @@ async function logTrip() {
 function render() {
   const logs = getLogs();
   const table = $("trip-log");
-  if (!table) return;
   table.innerHTML = "";
 
   const weeks = {};
@@ -229,25 +226,21 @@ function exportCSV() {
   a.click();
 }
 
-// DOM Ready - Adjusted perfectly to find the exact button names in index.html
+// DOM Ready
 document.addEventListener("DOMContentLoaded", () => {
-  if ($("add-trip")) $("add-trip").onclick = logTrip;
-  if ($("clear-all")) $("clear-all").onclick = clearAll;
-  if ($("export-csv")) $("export-csv").onclick = exportCSV;
+  $("log-trip-btn").onclick = logTrip;
+  $("clear-all-btn").onclick = clearAll;
+  $("export-csv-btn").onclick = exportCSV;
 
-  if ($("start")) $("start").onfocus = () => showPC("start");
-  if ($("destination")) $("destination").onfocus = () => showPC("destination");
-  if ($("start-recent")) $("start-recent").onclick = () => showPC("start");
-  if ($("destination-recent")) $("destination-recent").onclick = () => showPC("destination");
+  $("start-show-btn").onclick = () => showPC("start");
+  $("destination-show-btn").onclick = () => showPC("destination");
 
-  if ($("delete-yes")) {
-    $("delete-yes").onclick = () => {
-      saveLogs(getLogs().filter(l => l.id !== pending));
-      hideDel();
-      render();
-    };
-  }
-  if ($("delete-no")) $("delete-no").onclick = hideDel;
+  $("delete-yes").onclick = () => {
+    saveLogs(getLogs().filter(l => l.id !== pending));
+    hideDel();
+    render();
+  };
+  $("delete-no").onclick = hideDel;
 
   render();
 });

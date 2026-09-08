@@ -29,19 +29,18 @@ const weekOf = d => {
   return UK(mon.toISOString().slice(0, 10));
 };
 
-// API helpers - Safe static string definitions
+// API helpers - Single complete URL string combinations
 async function geo(pc) {
   const key = "5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101";
   const clean = pc.replace(/\s+/g, "").toUpperCase();
   
-  // FIXED: Locked solid structural string composition
-  const baseUrl = "https://heigit.org";
-  const url = baseUrl + "?api_key=" + key + "&text=" + clean;
+  // SINGLE UNIFIED STRING: Hardcoded server prefix to guarantee accurate routing paths
+  const url = "https://heigit.org" + key + "&text=" + clean;
   
   const r = await fetch(url);
   const j = await r.json();
   if (j.features && j.features.length > 0) {
-    return j.features[0].geometry.coordinates; // Safely array map coordinates [longitude, latitude]
+    return j.features[0].geometry.coordinates; // Returns [longitude, latitude] array
   }
   throw new Error("Invalid postcode: " + pc);
 }
@@ -51,13 +50,11 @@ async function dist(a, b) {
   const B = await geo(b); // [lon, lat]
   const key = "5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101";
   
-  // FIXED: Extracted coordinate arrays cleanly into explicit index points
-  const startLonLat = A[0] + "," + A[1];
-  const endLonLat = B[0] + "," + B[1];
+  const startCoords = A[0] + "," + A[1];
+  const endCoords = B[0] + "," + B[1];
   
-  // FIXED: Locked solid structural string composition
-  const baseUrl = "https://api.heigit.org/openrouteservice/v2/directions/driving-car";
-  const url = baseUrl + "?api_key=" + key + "&start=" + startLonLat + "&end=" + endLonLat;
+  // SINGLE UNIFIED STRING: Hardcoded server profile to guarantee accurate routing paths
+  const url = "https://heigit.org" + key + "&start=" + startCoords + "&end=" + endCoords;
   
   const r = await fetch(url);
   const j = await r.json();

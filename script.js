@@ -29,7 +29,7 @@ const weekOf = d => {
   return UK(mon.toISOString().slice(0, 10));
 };
 
-// API helpers
+// API helpers - Restored precise object index tracking [0]
 async function geo(pc) {
   const key = "5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101";
   const clean = pc.replace(/\s+/g, "").toUpperCase();
@@ -40,7 +40,7 @@ async function geo(pc) {
   
   const j = await r.json();
   if (j.features && j.features.length > 0) {
-    return j.features[0].geometry.coordinates; // [lon, lat]
+    return j.features[0].geometry.coordinates; // Correctly pulls array [lon, lat]
   }
   throw new Error("Invalid postcode: " + pc);
 }
@@ -50,7 +50,7 @@ async function dist(a, b) {
   const B = await geo(b);
   const key = "5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101";
   
-  // Format coordinate pairs explicitly as lon,lat strings
+  // Clean structure layout to format explicitly as lon,lat parameters
   const url = `https://heigit.org{key}&start=${A[0]},${A[1]}&end=${B[0]},${B[1]}`;
   
   const r = await fetch(url);

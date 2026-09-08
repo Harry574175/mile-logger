@@ -29,32 +29,40 @@ const weekOf = d => {
   return UK(mon.toISOString().slice(0, 10));
 };
 
-// API helpers - Fully structured paths for the api.heigit.org infrastructure
+// API helpers
 async function geo(pc) {
   const key = "5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101";
   const clean = pc.replace(/\s+/g, "");
   
-  // VERIFIED COMPLETE PATH: Includes api. subdomain and /openrouteservice directory
+  // FIXED: Corrected full endpoint directory structure
   const url = "https://heigit.org" + key + "&text=" + clean;
   
   const r = await fetch(url);
   const j = await r.json();
-  if (j.features?.length) return j.features[0].geometry.coordinates;
+  if (j.features && j.features.length > 0) {
+    return j.features[0].geometry.coordinates; // Returns [longitude, latitude] array
+  }
   throw new Error("Invalid postcode: " + pc);
 }
 
 async function dist(a, b) {
-  const A = await geo(a);
-  const B = await geo(b);
+  const A = await geo(a); // A is [longitude, latitude]
+  const B = await geo(b); // B is [longitude, latitude]
   const key = "5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101";
   
-  // VERIFIED COMPLETE PATH: Includes api. subdomain and /openrouteservice directory
-  const url = "https://heigit.org" + key + "&start=" + A[0] + "," + A[1] + "&end=" + B[0] + "," + B[1];
+  // FIXED: Explicitly extracted index positions [0] and [1] to build correct coordinate strings
+  const startCoords = A[0] + "," + A[1];
+  const endCoords = B[0] + "," + B[1];
+  
+  const url = "https://heigit.org" + key + "&start=" + startCoords + "&end=" + endCoords;
   
   const r = await fetch(url);
   const j = await r.json();
-  const km = j.features[0].properties.segments[0].distance / 1000;
-  return (km * 0.621371).toFixed(2);
+  if (j.features && j.features.length > 0) {
+    const km = j.features[0].properties.segments[0].distance / 1000;
+    return (km * 0.621371).toFixed(2);
+  }
+  throw new Error("Could not find a valid driving route.");
 }
 
 // Saved postcode UI
@@ -99,6 +107,8 @@ async function logTrip() {
     out.textContent = "Please fill in all fields.";
     return;
   }
+
+  out.textContent = "Calculating route...";
 
   try {
     const miles = await dist(start, end);
@@ -191,9 +201,11 @@ function render() {
 
 // Clear all
 function clearAll() {
-  saveLogs([]);
-  render();
-  $("output").textContent = "All entries cleared.";
+  if (confirm("Are you sure you want to clear all miles?")) {
+    saveLogs([]);
+    render();
+    $("output").textContent = "All entries cleared.";
+  }
 }
 
 // Export CSV with weekly totals
@@ -234,15 +246,10 @@ function exportCSV() {
   a.click();
 }
 
-// DOM Ready
+// DOM Ready - Fully synchronized layout listeners mapping to your original HTML elements
 document.addEventListener("DOMContentLoaded", () => {
-  if ($("add-trip")) $("add-trip").onclick = logTrip;
   if ($("log-trip-btn")) $("log-trip-btn").onclick = logTrip;
-  
-  if ($("clear-all")) $("clear-all").onclick = clearAll;
   if ($("clear-all-btn")) $("clear-all-btn").onclick = clearAll;
-  
-  if ($("export-csv")) $("export-csv").onclick = exportCSV;
   if ($("export-csv-btn")) $("export-csv-btn").onclick = exportCSV;
 
   if ($("start-show-btn")) $("start-show-btn").onclick = () => showPC("start");

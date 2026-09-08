@@ -1,4 +1,4 @@
-console.log("🚀 Fresh script.js v99 loaded!");
+console.log("script.js loaded");
 
 // Helpers
 const LS = localStorage;
@@ -29,43 +29,57 @@ const weekOf = d => {
   return UK(mon.toISOString().slice(0, 10));
 };
 
+// API KEY + BASE URL (updated)
+const ORS_KEY = "5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101";
+const ORS_BASE = "https://api.heigit.org/openrouteservice";
+
 // API helpers
 async function geo(pc) {
-  const key = "5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101";
-  const clean = pc.replace(/\s+/g, "").toUpperCase();
-  
-  // Fixed template literal formatting path
-  const url = `https://heigit.org{key}&text=${clean}`;
-  
+  const clean = pc.replace(/\s+/g, "");
+  const url = `${ORS_BASE}/geocode/search?api_key=${ORS_KEY}&text=${clean}`;
+
   const r = await fetch(url);
+  if (!r.ok) throw new Error("Geocoding failed. Check postcode.");
+
   const j = await r.json();
-  if (j.features && j.features.length > 0) {
-    return j.features[0].geometry.coordinates; // Explicit array indexing [longitude, latitude]
-  }
+  if (j.features?.length) return j.features[0].geometry.coordinates;
+
   throw new Error("Invalid postcode: " + pc);
 }
 
 async function dist(a, b) {
-  const A = await geo(a); 
-  const B = await geo(b); 
-  const key = "5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101";
-  
-  // Fixed template literal formatting path
-  const url = `https://heigit.org{key}&start=${A[0]},${A[1]}&end=${B[0]},${B[1]}`;
-  
-  const r = await fetch(url);
+  const A = await geo(a);
+  const B = await geo(b);
+
+  const url = `${ORS_BASE}/v2/directions/driving-car`;
+
+  const body = {
+    coordinates: [
+      [A[0], A[1]],
+      [B[0], B[1]]
+    ]
+  };
+
+  const r = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Authorization": ORS_KEY,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(body)
+  });
+
+  if (!r.ok) throw new Error("Routing failed. Try again.");
+
   const j = await r.json();
-  if (j.features && j.features.length > 0) {
-    const km = j.features[0].properties.segments[0].distance / 1000;
-    return (km * 0.621371).toFixed(2);
-  }
-  throw new Error("Could not find a valid driving route.");
+
+  const km = j.features[0].properties.segments[0].distance / 1000;
+  return (km * 0.621371).toFixed(2);
 }
 
 // Saved postcode UI
 function showPC(field) {
   const list = $(`${field}-saved-list`);
-  if (!list) return;
   list.innerHTML = "";
   getPC().forEach(pc => {
     const li = document.createElement("li");
@@ -82,13 +96,11 @@ function showPC(field) {
 let pending = null;
 function showDel(id) {
   pending = id;
-  const popup = $("delete-popup");
-  if (popup) popup.classList.remove("hidden");
+  $("delete-popup").classList.remove("hidden");
 }
 function hideDel() {
   pending = null;
-  const popup = $("delete-popup");
-  if (popup) popup.classList.add("hidden");
+  $("delete-popup").classList.add("hidden");
 }
 
 // Log trip
@@ -104,8 +116,6 @@ async function logTrip() {
     out.textContent = "Please fill in all fields.";
     return;
   }
-
-  out.textContent = "Calculating route...";
 
   try {
     const miles = await dist(start, end);
@@ -138,7 +148,6 @@ async function logTrip() {
 function render() {
   const logs = getLogs();
   const table = $("trip-log");
-  if (!table) return;
   table.innerHTML = "";
 
   const weeks = {};
@@ -165,7 +174,7 @@ function render() {
       const total = wk.reduce((s, l) => s + l.distance, 0);
 
       const head = document.createElement("tr");
-      head.innerHTML = `<td colspan='6'><strong>Week Commencing: ${week} — Total Miles: ${total.toFixed(2)}</strong></td>`;
+      head.innerHTML = `<td colspan="6"><strong>Week Commencing: ${week} — Total Miles: ${total.toFixed(2)}</strong></td>`;
       table.appendChild(head);
 
       wk.forEach(l => {
@@ -198,11 +207,9 @@ function render() {
 
 // Clear all
 function clearAll() {
-  if (confirm("Are you sure you want to clear all miles?")) {
-    saveLogs([]);
-    render();
-    $("output").textContent = "All entries cleared.";
-  }
+  saveLogs([]);
+  render();
+  $("output").textContent = "All entries cleared.";
 }
 
 // Export CSV with weekly totals
@@ -232,7 +239,7 @@ function exportCSV() {
         csv += `${week},${l.date},${l.period},${l.start},${l.end},${l.distance.toFixed(2)},${l.name}\n`;
       });
 
-      csv += `Total Miles for ${week},,,,, ${total.toFixed(2)}\n\n`;
+      csv += `Total Miles for ${week},,,,,${total.toFixed(2)}\n\n`;
     });
 
   const blob = new Blob([csv], { type: "text/csv" });
@@ -245,21 +252,19 @@ function exportCSV() {
 
 // DOM Ready
 document.addEventListener("DOMContentLoaded", () => {
-  if ($("log-trip-btn")) $("log-trip-btn").onclick = logTrip;
-  if ($("clear-all-btn")) $("clear-all-btn").onclick = clearAll;
-  if ($("export-csv-btn")) $("export-csv-btn").onclick = exportCSV;
+  $("log-trip-btn").onclick = logTrip;
+  $("clear-all-btn").onclick = clearAll;
+  $("export-csv-btn").onclick = exportCSV;
 
-  if ($("start-show-btn")) $("start-show-btn").onclick = () => showPC("start");
-  if ($("destination-show-btn")) $("destination-show-btn").onclick = () => showPC("destination");
+  $("start-show-btn").onclick = () => showPC("start");
+  $("destination-show-btn").onclick = () => showPC("destination");
 
-  if ($("delete-yes")) {
-    $("delete-yes").onclick = () => {
-      saveLogs(getLogs().filter(l => l.id !== pending));
-      hideDel();
-      render();
-    };
-  }
-  if ($("delete-no")) $("delete-no").onclick = hideDel;
+  $("delete-yes").onclick = () => {
+    saveLogs(getLogs().filter(l => l.id !== pending));
+    hideDel();
+    render();
+  };
+  $("delete-no").onclick = hideDel;
 
   render();
 });

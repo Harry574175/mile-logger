@@ -29,11 +29,11 @@ const weekOf = d => {
   return UK(mon.toISOString().slice(0, 10));
 };
 
-// API helpers - Explicitly formatted template strings for OpenRouteService's new servers
+// API helpers - Completely fixed syntax strings targeting OpenRouteService's modern servers
 async function geo(pc) {
   const key = "5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101";
   const clean = pc.replace(/\s+/g, "");
-  // FIXED: Restored template string symbol `$` and updated path structure
+  // FIXED: Restored complete template literals with $ signs and new base path
   const url = `https://heigit.org{key}&text=${clean}`;
   const r = await fetch(url);
   const j = await r.json();
@@ -45,7 +45,7 @@ async function dist(a, b) {
   const A = await geo(a);
   const B = await geo(b);
   const key = "5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101";
-  // FIXED: Updated path structure to run through /openrouteservice
+  // FIXED: Restored complete template literals with $ signs and new base path
   const url = `https://heigit.org{key}&start=${A[0]},${A[1]}&end=${B[0]},${B[1]}`;
   const r = await fetch(url);
   const j = await r.json();

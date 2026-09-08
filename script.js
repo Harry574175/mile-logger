@@ -1,4 +1,4 @@
-console.log("script.js loaded");
+console.log("🚀 Fresh script.js v99 loaded!");
 
 // Helpers
 const LS = localStorage;
@@ -19,7 +19,7 @@ const savePC = pc => {
 // Date helpers
 const UK = d => {
   const [y, m, d2] = d.split("-");
-  return d2 + "-" + m + "-" + y;
+  return `${d2}-${m}-${y}`;
 };
 const weekOf = d => {
   const dt = new Date(d);
@@ -29,32 +29,29 @@ const weekOf = d => {
   return UK(mon.toISOString().slice(0, 10));
 };
 
-// API helpers - Single complete URL string combinations
+// API helpers
 async function geo(pc) {
   const key = "5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101";
   const clean = pc.replace(/\s+/g, "").toUpperCase();
   
-  // SINGLE UNIFIED STRING: Hardcoded server prefix to guarantee accurate routing paths
-  const url = "https://heigit.org" + key + "&text=" + clean;
+  // Fixed template literal formatting path
+  const url = `https://heigit.org{key}&text=${clean}`;
   
   const r = await fetch(url);
   const j = await r.json();
   if (j.features && j.features.length > 0) {
-    return j.features[0].geometry.coordinates; // Returns [longitude, latitude] array
+    return j.features[0].geometry.coordinates; // Explicit array indexing [longitude, latitude]
   }
   throw new Error("Invalid postcode: " + pc);
 }
 
 async function dist(a, b) {
-  const A = await geo(a); // [lon, lat]
-  const B = await geo(b); // [lon, lat]
+  const A = await geo(a); 
+  const B = await geo(b); 
   const key = "5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101";
   
-  const startCoords = A[0] + "," + A[1];
-  const endCoords = B[0] + "," + B[1];
-  
-  // SINGLE UNIFIED STRING: Hardcoded server profile to guarantee accurate routing paths
-  const url = "https://heigit.org" + key + "&start=" + startCoords + "&end=" + endCoords;
+  // Fixed template literal formatting path
+  const url = `https://heigit.org{key}&start=${A[0]},${A[1]}&end=${B[0]},${B[1]}`;
   
   const r = await fetch(url);
   const j = await r.json();
@@ -67,7 +64,7 @@ async function dist(a, b) {
 
 // Saved postcode UI
 function showPC(field) {
-  const list = $(field + "-saved-list");
+  const list = $(`${field}-saved-list`);
   if (!list) return;
   list.innerHTML = "";
   getPC().forEach(pc => {
@@ -168,7 +165,7 @@ function render() {
       const total = wk.reduce((s, l) => s + l.distance, 0);
 
       const head = document.createElement("tr");
-      head.innerHTML = "<td colspan='6'><strong>Week Commencing: " + week + " — Total Miles: " + total.toFixed(2) + "</strong></td>";
+      head.innerHTML = `<td colspan='6'><strong>Week Commencing: ${week} — Total Miles: ${total.toFixed(2)}</strong></td>`;
       table.appendChild(head);
 
       wk.forEach(l => {
@@ -232,10 +229,10 @@ function exportCSV() {
       const total = wk.reduce((sum, l) => sum + l.distance, 0);
 
       wk.forEach(l => {
-        csv += week + "," + l.date + "," + l.period + "," + l.start + "," + l.end + "," + l.distance.toFixed(2) + "," + l.name + "\n";
+        csv += `${week},${l.date},${l.period},${l.start},${l.end},${l.distance.toFixed(2)},${l.name}\n`;
       });
 
-      csv += "Total Miles for " + week + ",,,,, " + total.toFixed(2) + "\n\n";
+      csv += `Total Miles for ${week},,,,, ${total.toFixed(2)}\n\n`;
     });
 
   const blob = new Blob([csv], { type: "text/csv" });

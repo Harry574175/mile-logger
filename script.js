@@ -29,40 +29,53 @@ const weekOf = d => {
   return UK(mon.toISOString().slice(0, 10));
 };
 
-// API helpers
+// API helpers - Converted to stable explicit URL structures and POST layout requests
 async function geo(pc) {
   const key = "5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101";
-  const clean = pc.replace(/\s+/g, "");
+  const clean = pc.replace(/\s+/g, "").toUpperCase();
   
-  // FIXED: Corrected full endpoint directory structure
+  // Clean string addition builder matching the unified HeiGIT architecture
   const url = "https://heigit.org" + key + "&text=" + clean;
   
   const r = await fetch(url);
+  if (!r.ok) throw new Error("Geocoding service returned status " + r.status);
+  
   const j = await r.json();
   if (j.features && j.features.length > 0) {
-    return j.features[0].geometry.coordinates; // Returns [longitude, latitude] array
+    return j.features[0].geometry.coordinates; // Safely index target coordinates array [lon, lat]
   }
-  throw new Error("Invalid postcode: " + pc);
+  throw new Error("Invalid postcode location profile: " + pc);
 }
 
 async function dist(a, b) {
-  const A = await geo(a); // A is [longitude, latitude]
-  const B = await geo(b); // B is [longitude, latitude]
+  const A = await geo(a); // Resolves to [lon, lat]
+  const B = await geo(b); // Resolves to [lon, lat]
   const key = "5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101";
   
-  // FIXED: Explicitly extracted index positions [0] and [1] to build correct coordinate strings
-  const startCoords = A[0] + "," + A[1];
-  const endCoords = B[0] + "," + B[1];
+  // Updated to modern HeiGIT directions endpoint mapping layout
+  const url = "https://heigit.org";
   
-  const url = "https://heigit.org" + key + "&start=" + startCoords + "&end=" + endCoords;
+  // Send coordinates cleanly inside a structured JSON POST configuration request payload
+  const r = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Accept": "application/json, application/geo+json, application/gpx+xml, text/csv; charset=utf-8",
+      "Authorization": key,
+      "Content-Type": "application/json; charset=utf-8"
+    },
+    body: JSON.stringify({
+      coordinates: [A, B] // Sends coordinates as an ordered array sequence [[lon, lat], [lon, lat]]
+    })
+  });
   
-  const r = await fetch(url);
+  if (!r.ok) throw new Error("Routing infrastructure service returned status " + r.status);
+  
   const j = await r.json();
-  if (j.features && j.features.length > 0) {
-    const km = j.features[0].properties.segments[0].distance / 1000;
+  if (j.routes && j.routes.length > 0) {
+    const km = j.routes[0].segments[0].distance / 1000;
     return (km * 0.621371).toFixed(2);
   }
-  throw new Error("Could not find a valid driving route.");
+  throw new Error("Could not map a valid route geometry tracking path.");
 }
 
 // Saved postcode UI
@@ -108,7 +121,7 @@ async function logTrip() {
     return;
   }
 
-  out.textContent = "Calculating route...";
+  out.textContent = "Calculating journey distances...";
 
   try {
     const miles = await dist(start, end);
@@ -129,11 +142,12 @@ async function logTrip() {
 
     saveLogs(logs);
     render();
-    out.textContent = "Trip added!";
+    out.textContent = "Trip successfully added!";
     $("start").value = "";
     $("destination").value = "";
   } catch (e) {
-    out.textContent = e.message;
+    out.textContent = "Error context: " + e.message;
+    console.error(e);
   }
 }
 
@@ -246,7 +260,7 @@ function exportCSV() {
   a.click();
 }
 
-// DOM Ready - Fully synchronized layout listeners mapping to your original HTML elements
+// DOM Ready
 document.addEventListener("DOMContentLoaded", () => {
   if ($("log-trip-btn")) $("log-trip-btn").onclick = logTrip;
   if ($("clear-all-btn")) $("clear-all-btn").onclick = clearAll;

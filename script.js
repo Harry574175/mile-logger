@@ -29,7 +29,7 @@ const weekOf = d => {
   return UK(mon.toISOString().slice(0, 10));
 };
 
-// API helpers - Fixed payload extraction arrays
+// API helpers - Restored precise data parsing indices
 async function geo(pc) {
   const key = "5b3ce3597851110001cf6248701ed15b48864d0e93d5a18cc93f3101";
   const clean = pc.replace(/\s+/g, "");
@@ -39,7 +39,9 @@ async function geo(pc) {
   if (!r.ok) throw new Error(`Geocode network error: ${r.status}`);
   
   const j = await r.json();
-  if (j.features?.length) return j.features[0].geometry.coordinates;
+  if (j.features && j.features.length > 0) {
+    return j.features[0].geometry.coordinates;
+  }
   throw new Error("Invalid postcode: " + pc);
 }
 
@@ -53,7 +55,7 @@ async function dist(a, b) {
   if (!r.ok) throw new Error(`Directions network error: ${r.status}`);
   
   const j = await r.json();
-  if (j.features?.length) {
+  if (j.features && j.features.length > 0) {
     const km = j.features[0].properties.segments[0].distance / 1000;
     return (km * 0.621371).toFixed(2);
   }
@@ -229,7 +231,7 @@ function exportCSV() {
       const total = wk.reduce((sum, l) => sum + l.distance, 0);
 
       wk.forEach(l => {
-        csv += `${week},${l.date},${l.period},${l.start},${l.end},${l.distance.toFixed(2)},${l.name}\n`;
+        csv += `${week},${l.date},${l.period},${l.start},${l.end},${l.distance.toFixed(2)},${l.name}\n\n`;
       });
 
       csv += `Total Miles for ${week},,,,,${total.toFixed(2)}\n\n`;
@@ -243,11 +245,10 @@ function exportCSV() {
   a.click();
 }
 
-// DOM Ready - Mapped directly to match your index.html IDs
+// DOM Ready
 document.addEventListener("DOMContentLoaded", () => {
   const bindClick = (id, fn) => { if($(id)) $(id).onclick = fn; };
 
-  // Targets button IDs matching index.html
   bindClick("add-trip", logTrip);
   bindClick("clear-all", clearAll);
   bindClick("export-csv", exportCSV);
